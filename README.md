@@ -1,6 +1,10 @@
 # OpenMOSS WebUI
 
 <p align="center">
+<img src="https://github.com/uluckyXH/OpenMOSS/blob/main/docs/logo.png?raw=true" alt="OpenMOSS Logo" width="200" />
+</p>
+
+<p align="center">
 <img src="https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vuedotjs&logoColor=white" alt="Vue">
 <img src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white" alt="Vite">
 <img src="https://img.shields.io/badge/TailwindCSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="TailwindCSS">
