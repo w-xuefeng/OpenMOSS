@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { useDebounceFn, useMediaQuery } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { useDebounceFn, useMediaQuery } from '@vueuse/core';
 import {
     adminTaskApi,
     type AdminModuleItem,
@@ -9,21 +9,21 @@ import {
     type AdminSubTaskItem,
     type AdminTaskDetail,
     type AdminTaskItem,
-} from '@/api/client'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import TextOverflowTooltip from '@/components/common/TextOverflowTooltip.vue'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
+} from '@/api/client';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import TextOverflowTooltip from '@/components/common/TextOverflowTooltip.vue';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import {
     Sheet,
     SheetContent,
     SheetDescription,
     SheetHeader,
     SheetTitle,
-} from '@/components/ui/sheet'
+} from '@/components/ui/sheet';
 
-import { TooltipProvider } from '@/components/ui/tooltip'
+import { TooltipProvider } from '@/components/ui/tooltip';
 import {
     AlertCircle,
     ArrowLeft,
@@ -33,52 +33,52 @@ import {
     Loader2,
     RefreshCw,
     Search,
-} from 'lucide-vue-next'
+} from 'lucide-vue-next';
 
-const TASK_PAGE_SIZE = 8
-const SUB_TASK_PAGE_SIZE = 8
-const MIN_SKELETON_MS = 300
+const TASK_PAGE_SIZE = 8;
+const SUB_TASK_PAGE_SIZE = 8;
+const MIN_SKELETON_MS = 300;
 
-const isCompactLayout = useMediaQuery('(max-width: 1023px)')
-const detailAnchor = ref<HTMLElement | null>(null)
+const isCompactLayout = useMediaQuery('(max-width: 1023px)');
+const detailAnchor = ref<HTMLElement | null>(null);
 
-const taskKeyword = ref('')
-const taskStatus = ref('all')
-const taskType = ref('all')
-const taskPage = ref(1)
+const taskKeyword = ref('');
+const taskStatus = ref('all');
+const taskType = ref('all');
+const taskPage = ref(1);
 
-const subTaskStatus = ref('all')
-const subTaskPage = ref(1)
+const subTaskStatus = ref('all');
+const subTaskPage = ref(1);
 
-const loadingTasks = ref(false)
-const loadingDetail = ref(false)
-const loadingSubTasks = ref(false)
-const subTaskDetailLoading = ref(false)
+const loadingTasks = ref(false);
+const loadingDetail = ref(false);
+const loadingSubTasks = ref(false);
+const subTaskDetailLoading = ref(false);
 
-const taskListError = ref('')
-const detailError = ref('')
-const subTaskListError = ref('')
-const subTaskDetailError = ref('')
+const taskListError = ref('');
+const detailError = ref('');
+const subTaskListError = ref('');
+const subTaskDetailError = ref('');
 
-const selectedTaskId = ref<string | null>(null)
-const selectedModuleId = ref<string | null>(null)
-const selectedTask = ref<AdminTaskDetail | null>(null)
-const selectedSubTask = ref<AdminSubTaskDetail | null>(null)
-const subTaskSheetOpen = ref(false)
+const selectedTaskId = ref<string | null>(null);
+const selectedModuleId = ref<string | null>(null);
+const selectedTask = ref<AdminTaskDetail | null>(null);
+const selectedSubTask = ref<AdminSubTaskDetail | null>(null);
+const subTaskSheetOpen = ref(false);
 
-const taskPageData = ref<AdminPageResponse<AdminTaskItem>>(createEmptyPage<AdminTaskItem>())
-const modulePageData = ref<AdminPageResponse<AdminModuleItem>>(createEmptyPage<AdminModuleItem>())
+const taskPageData = ref<AdminPageResponse<AdminTaskItem>>(createEmptyPage<AdminTaskItem>());
+const modulePageData = ref<AdminPageResponse<AdminModuleItem>>(createEmptyPage<AdminModuleItem>());
 const subTaskPageData =
-    ref<AdminPageResponse<AdminSubTaskItem>>(createEmptyPage<AdminSubTaskItem>())
+    ref<AdminPageResponse<AdminSubTaskItem>>(createEmptyPage<AdminSubTaskItem>());
 
-let taskListRequestId = 0
-let taskContextRequestId = 0
-let subTaskListRequestId = 0
-let subTaskDetailRequestId = 0
-const detailKey = ref(0)
+let taskListRequestId = 0;
+let taskContextRequestId = 0;
+let subTaskListRequestId = 0;
+let subTaskDetailRequestId = 0;
+const detailKey = ref(0);
 
 function minDelay(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, MIN_SKELETON_MS))
+    return new Promise((resolve) => setTimeout(resolve, MIN_SKELETON_MS));
 }
 
 const taskStatusOptions = [
@@ -89,13 +89,13 @@ const taskStatusOptions = [
     { value: 'completed', label: '已完成' },
     { value: 'archived', label: '已归档' },
     { value: 'cancelled', label: '已取消' },
-] as const
+] as const;
 
 const taskTypeOptions = [
     { value: 'all', label: '全部类型' },
     { value: 'once', label: '一次性任务' },
     { value: 'recurring', label: '周期任务' },
-] as const
+] as const;
 
 const subTaskStatusOptions = [
     { value: 'all', label: '全部' },
@@ -107,37 +107,37 @@ const subTaskStatusOptions = [
     { value: 'blocked', label: '阻塞' },
     { value: 'done', label: '已完成' },
     { value: 'cancelled', label: '已取消' },
-] as const
+] as const;
 
 const selectedTaskProgress = computed(() => {
     if (!selectedTask.value) {
-        return 0
+        return 0;
     }
-    return getCompletionRatio(selectedTask.value.done_count, selectedTask.value.sub_task_count)
-})
+    return getCompletionRatio(selectedTask.value.done_count, selectedTask.value.sub_task_count);
+});
 
 
 
 const reloadTasksDebounced = useDebounceFn(() => {
-    taskPage.value = 1
-    void loadTasks()
-}, 280)
+    taskPage.value = 1;
+    void loadTasks();
+}, 280);
 
 watch([taskKeyword, taskStatus, taskType], () => {
-    loadingTasks.value = true
-    reloadTasksDebounced()
-})
+    loadingTasks.value = true;
+    reloadTasksDebounced();
+});
 
 watch(subTaskStatus, () => {
-    subTaskPage.value = 1
+    subTaskPage.value = 1;
     if (selectedTaskId.value) {
-        void loadSelectedTaskSubTasks(selectedTaskId.value)
+        void loadSelectedTaskSubTasks(selectedTaskId.value);
     }
-})
+});
 
 onMounted(() => {
-    void loadTasks()
-})
+    void loadTasks();
+});
 
 function createEmptyPage<T>(): AdminPageResponse<T> {
     return {
@@ -147,31 +147,31 @@ function createEmptyPage<T>(): AdminPageResponse<T> {
         page_size: 0,
         total_pages: 1,
         has_more: false,
-    }
+    };
 }
 
 function clearSelectedTaskState() {
-    selectedTaskId.value = null
-    selectedModuleId.value = null
-    selectedTask.value = null
-    modulePageData.value = createEmptyPage<AdminModuleItem>()
-    subTaskPageData.value = createEmptyPage<AdminSubTaskItem>()
-    detailError.value = ''
-    subTaskListError.value = ''
+    selectedTaskId.value = null;
+    selectedModuleId.value = null;
+    selectedTask.value = null;
+    modulePageData.value = createEmptyPage<AdminModuleItem>();
+    subTaskPageData.value = createEmptyPage<AdminSubTaskItem>();
+    detailError.value = '';
+    subTaskListError.value = '';
 }
 
 function toggleModule(moduleId: string) {
-    selectedModuleId.value = selectedModuleId.value === moduleId ? null : moduleId
+    selectedModuleId.value = selectedModuleId.value === moduleId ? null : moduleId;
 }
 
 function formatDate(value: string | null) {
     if (!value) {
-        return '未记录'
+        return '未记录';
     }
 
-    const date = new Date(value)
+    const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
-        return '未记录'
+        return '未记录';
     }
 
     return new Intl.DateTimeFormat('zh-CN', {
@@ -179,17 +179,17 @@ function formatDate(value: string | null) {
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-    }).format(date)
+    }).format(date);
 }
 
 function formatTaskType(value: string) {
     if (value === 'once') {
-        return '一次性'
+        return '一次性';
     }
     if (value === 'recurring') {
-        return '周期性'
+        return '周期性';
     }
-    return value
+    return value;
 }
 
 function formatTaskStatus(value: string) {
@@ -202,7 +202,7 @@ function formatTaskStatus(value: string) {
             archived: '已归档',
             cancelled: '已取消',
         }[value] ?? value
-    )
+    );
 }
 
 function formatSubTaskStatus(value: string) {
@@ -217,7 +217,7 @@ function formatSubTaskStatus(value: string) {
             done: '已完成',
             cancelled: '已取消',
         }[value] ?? value
-    )
+    );
 }
 
 function formatPriority(value: string) {
@@ -227,14 +227,14 @@ function formatPriority(value: string) {
             medium: '中优先',
             low: '低优先',
         }[value] ?? value
-    )
+    );
 }
 
 function getCompletionRatio(doneCount: number, totalCount: number) {
     if (!totalCount) {
-        return 0
+        return 0;
     }
-    return Math.round((doneCount / totalCount) * 100)
+    return Math.round((doneCount / totalCount) * 100);
 }
 
 
@@ -249,7 +249,7 @@ function getTaskBadgeClass(status: string) {
             archived: 'border-stone-200 bg-stone-100 text-stone-700',
             cancelled: 'border-rose-200 bg-rose-50 text-rose-700',
         }[status] ?? 'border-border bg-muted text-muted-foreground'
-    )
+    );
 }
 
 function getSubTaskBadgeClass(status: string) {
@@ -264,7 +264,7 @@ function getSubTaskBadgeClass(status: string) {
             done: 'border-emerald-200 bg-emerald-50 text-emerald-700',
             cancelled: 'border-stone-200 bg-stone-100 text-stone-700',
         }[status] ?? 'border-border bg-muted text-muted-foreground'
-    )
+    );
 }
 
 function getSubTaskLeftBorderClass(status: string) {
@@ -279,7 +279,7 @@ function getSubTaskLeftBorderClass(status: string) {
             done: 'border-l-emerald-500',
             cancelled: 'border-l-stone-400',
         }[status] ?? 'border-l-border'
-    )
+    );
 }
 
 function getSubTaskDotClass(status: string) {
@@ -294,7 +294,7 @@ function getSubTaskDotClass(status: string) {
             done: 'bg-emerald-500',
             cancelled: 'bg-stone-400',
         }[status] ?? 'bg-muted-foreground'
-    )
+    );
 }
 
 function getPriorityBadgeClass(priority: string) {
@@ -304,15 +304,15 @@ function getPriorityBadgeClass(priority: string) {
             medium: 'border-amber-200 bg-amber-50 text-amber-700',
             low: 'border-slate-300 bg-slate-100 text-slate-700',
         }[priority] ?? 'border-border bg-muted text-muted-foreground'
-    )
+    );
 }
 
 
 
 async function loadTasks() {
-    const requestId = ++taskListRequestId
-    loadingTasks.value = true
-    taskListError.value = ''
+    const requestId = ++taskListRequestId;
+    loadingTasks.value = true;
+    taskListError.value = '';
 
     try {
         const response = await adminTaskApi.list({
@@ -323,57 +323,57 @@ async function loadTasks() {
             type: taskType.value === 'all' ? undefined : taskType.value,
             sort_by: 'updated_at',
             sort_order: 'desc',
-        })
+        });
 
         if (requestId !== taskListRequestId) {
-            return
+            return;
         }
 
-        taskPageData.value = response.data
+        taskPageData.value = response.data;
 
         if (!response.data.items.length) {
-            clearSelectedTaskState()
-            return
+            clearSelectedTaskState();
+            return;
         }
 
-        const firstTask = response.data.items[0]
+        const firstTask = response.data.items[0];
         if (!firstTask) {
-            clearSelectedTaskState()
-            return
+            clearSelectedTaskState();
+            return;
         }
 
-        const currentIds = new Set(response.data.items.map((item) => item.id))
+        const currentIds = new Set(response.data.items.map((item) => item.id));
         const nextTaskId =
             selectedTaskId.value && currentIds.has(selectedTaskId.value)
                 ? selectedTaskId.value
-                : firstTask.id
+                : firstTask.id;
 
-        const prevTaskId = selectedTaskId.value
-        selectedTaskId.value = nextTaskId
+        const prevTaskId = selectedTaskId.value;
+        selectedTaskId.value = nextTaskId;
         if (nextTaskId !== prevTaskId || !selectedTask.value) {
-            void loadSelectedTaskContext(nextTaskId)
+            void loadSelectedTaskContext(nextTaskId);
         }
     } catch (error) {
         if (requestId !== taskListRequestId) {
-            return
+            return;
         }
 
-        console.error('Failed to load admin tasks', error)
-        taskListError.value = '任务列表加载失败，请稍后再试。'
-        taskPageData.value = createEmptyPage<AdminTaskItem>()
-        clearSelectedTaskState()
+        console.error('Failed to load admin tasks', error);
+        taskListError.value = '任务列表加载失败，请稍后再试。';
+        taskPageData.value = createEmptyPage<AdminTaskItem>();
+        clearSelectedTaskState();
     } finally {
         if (requestId === taskListRequestId) {
-            loadingTasks.value = false
+            loadingTasks.value = false;
         }
     }
 }
 
 async function loadSelectedTaskContext(taskId: string) {
-    const requestId = ++taskContextRequestId
-    loadingDetail.value = true
-    detailError.value = ''
-    subTaskListError.value = ''
+    const requestId = ++taskContextRequestId;
+    loadingDetail.value = true;
+    detailError.value = '';
+    subTaskListError.value = '';
 
     try {
         const [taskResponse, moduleResponse, subTaskResponse] = await Promise.all([
@@ -391,38 +391,38 @@ async function loadSelectedTaskContext(taskId: string) {
                 sort_by: 'updated_at',
                 sort_order: 'desc',
             }),
-        ])
+        ]);
 
         if (requestId !== taskContextRequestId || selectedTaskId.value !== taskId) {
-            return
+            return;
         }
 
-        selectedTask.value = taskResponse.data
-        modulePageData.value = moduleResponse.data
-        subTaskPageData.value = subTaskResponse.data
-        subTaskPage.value = 1
-        detailKey.value++
+        selectedTask.value = taskResponse.data;
+        modulePageData.value = moduleResponse.data;
+        subTaskPageData.value = subTaskResponse.data;
+        subTaskPage.value = 1;
+        detailKey.value++;
     } catch (error) {
         if (requestId !== taskContextRequestId) {
-            return
+            return;
         }
 
-        console.error('Failed to load selected task context', error)
-        detailError.value = '任务详情加载失败，请重新刷新。'
-        selectedTask.value = null
-        modulePageData.value = createEmptyPage<AdminModuleItem>()
-        subTaskPageData.value = createEmptyPage<AdminSubTaskItem>()
+        console.error('Failed to load selected task context', error);
+        detailError.value = '任务详情加载失败，请重新刷新。';
+        selectedTask.value = null;
+        modulePageData.value = createEmptyPage<AdminModuleItem>();
+        subTaskPageData.value = createEmptyPage<AdminSubTaskItem>();
     } finally {
         if (requestId === taskContextRequestId) {
-            loadingDetail.value = false
+            loadingDetail.value = false;
         }
     }
 }
 
 async function loadSelectedTaskSubTasks(taskId: string) {
-    const requestId = ++subTaskListRequestId
-    loadingSubTasks.value = true
-    subTaskListError.value = ''
+    const requestId = ++subTaskListRequestId;
+    loadingSubTasks.value = true;
+    subTaskListError.value = '';
 
     try {
         const [response] = await Promise.all([
@@ -434,24 +434,24 @@ async function loadSelectedTaskSubTasks(taskId: string) {
                 sort_order: 'desc',
             }),
             minDelay(),
-        ])
+        ]);
 
         if (requestId !== subTaskListRequestId || selectedTaskId.value !== taskId) {
-            return
+            return;
         }
 
-        subTaskPageData.value = response.data
+        subTaskPageData.value = response.data;
     } catch (error) {
         if (requestId !== subTaskListRequestId) {
-            return
+            return;
         }
 
-        console.error('Failed to load task sub tasks', error)
-        subTaskListError.value = '子任务列表加载失败，请稍后重试。'
-        subTaskPageData.value = createEmptyPage<AdminSubTaskItem>()
+        console.error('Failed to load task sub tasks', error);
+        subTaskListError.value = '子任务列表加载失败，请稍后重试。';
+        subTaskPageData.value = createEmptyPage<AdminSubTaskItem>();
     } finally {
         if (requestId === subTaskListRequestId) {
-            loadingSubTasks.value = false
+            loadingSubTasks.value = false;
         }
     }
 }
@@ -459,73 +459,73 @@ async function loadSelectedTaskSubTasks(taskId: string) {
 async function selectTask(taskId: string) {
     if (selectedTaskId.value === taskId) {
         if (isCompactLayout.value) {
-            await scrollDetailIntoView()
+            await scrollDetailIntoView();
         }
-        return
+        return;
     }
 
-    selectedModuleId.value = null
-    selectedTaskId.value = taskId
-    subTaskPage.value = 1
-    void loadSelectedTaskContext(taskId)
+    selectedModuleId.value = null;
+    selectedTaskId.value = taskId;
+    subTaskPage.value = 1;
+    void loadSelectedTaskContext(taskId);
 
     if (isCompactLayout.value) {
-        await scrollDetailIntoView()
+        await scrollDetailIntoView();
     }
 }
 
 async function scrollDetailIntoView() {
-    await nextTick()
-    detailAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    await nextTick();
+    detailAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function goToTaskPage(page: number) {
     if (page < 1 || page > taskPageData.value.total_pages || page === taskPage.value) {
-        return
+        return;
     }
-    taskPage.value = page
-    void loadTasks()
+    taskPage.value = page;
+    void loadTasks();
 }
 
 function goToSubTaskPage(page: number) {
     if (page < 1 || page > subTaskPageData.value.total_pages || page === subTaskPage.value) {
-        return
+        return;
     }
-    subTaskPage.value = page
+    subTaskPage.value = page;
     if (selectedTaskId.value) {
-        void loadSelectedTaskSubTasks(selectedTaskId.value)
+        void loadSelectedTaskSubTasks(selectedTaskId.value);
     }
 }
 
 function refreshCurrentView() {
-    void loadTasks()
+    void loadTasks();
 }
 
 async function openSubTaskDetail(subTaskId: string) {
-    const requestId = ++subTaskDetailRequestId
-    subTaskSheetOpen.value = true
-    subTaskDetailLoading.value = true
-    subTaskDetailError.value = ''
-    selectedSubTask.value = null
+    const requestId = ++subTaskDetailRequestId;
+    subTaskSheetOpen.value = true;
+    subTaskDetailLoading.value = true;
+    subTaskDetailError.value = '';
+    selectedSubTask.value = null;
 
     try {
-        const response = await adminTaskApi.getSubTask(subTaskId)
+        const response = await adminTaskApi.getSubTask(subTaskId);
 
         if (requestId !== subTaskDetailRequestId) {
-            return
+            return;
         }
 
-        selectedSubTask.value = response.data
+        selectedSubTask.value = response.data;
     } catch (error) {
         if (requestId !== subTaskDetailRequestId) {
-            return
+            return;
         }
 
-        console.error('Failed to load sub task detail', error)
-        subTaskDetailError.value = '子任务详情加载失败，请稍后重试。'
+        console.error('Failed to load sub task detail', error);
+        subTaskDetailError.value = '子任务详情加载失败，请稍后重试。';
     } finally {
         if (requestId === subTaskDetailRequestId) {
-            subTaskDetailLoading.value = false
+            subTaskDetailLoading.value = false;
         }
     }
 }

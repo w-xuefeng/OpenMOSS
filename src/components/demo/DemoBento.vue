@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Users, RefreshCcw, ShieldCheck, Trophy, Repeat } from 'lucide-vue-next'
-import { markRaw, type Component } from 'vue'
+import { Users, RefreshCcw, ShieldCheck, Trophy, Repeat } from 'lucide-vue-next';
+import { markRaw, type Component } from 'vue';
 
 const features: {
   title: string
@@ -48,7 +48,7 @@ const features: {
     span: 'wide',
     accent: '#4A7FA5',
   },
-]
+];
 </script>
 
 <template>

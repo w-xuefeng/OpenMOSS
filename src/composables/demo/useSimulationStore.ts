@@ -1,4 +1,4 @@
-import { reactive, computed } from 'vue'
+import { reactive, computed } from 'vue';
 import type {
   AgentDef,
   AgentState,
@@ -8,8 +8,8 @@ import type {
   SummaryData,
   TaskState,
   TimelineEntry,
-} from './types'
-import { AGENT_EMOJI } from './types'
+} from './types';
+import { AGENT_EMOJI } from './types';
 
 // =============================================
 // SimulationStore — 统一状态层
@@ -17,7 +17,7 @@ import { AGENT_EMOJI } from './types'
 // UI 组件只读这个 store，不关心数据来源
 // =============================================
 
-let _entryId = 0
+let _entryId = 0;
 
 function createStore() {
   const state = reactive({
@@ -41,11 +41,11 @@ function createStore() {
 
     /** 总时长（秒） */
     duration: 0,
-  })
+  });
 
   // ── Computed ──
 
-  const agentList = computed(() => Array.from(state.agents.values()))
+  const agentList = computed(() => Array.from(state.agents.values()));
 
   const tasksByStatus = computed(() => {
     const groups: Record<string, TaskState[]> = {
@@ -55,18 +55,18 @@ function createStore() {
       review: [],
       rework: [],
       done: [],
-    }
+    };
     for (const t of state.tasks) {
-      groups[t.status]?.push(t)
+      groups[t.status]?.push(t);
     }
-    return groups
-  })
+    return groups;
+  });
 
   // ── Actions ──
 
   /** 初始化：加载场景的 Agent 定义 */
   function initAgents(defs: AgentDef[]) {
-    state.agents.clear()
+    state.agents.clear();
     for (const def of defs) {
       state.agents.set(def.id, {
         id: def.id,
@@ -77,35 +77,35 @@ function createStore() {
         score: 100,
         message: '',
         expression: AGENT_EMOJI.idle,
-      })
+      });
     }
   }
 
   /** 重置所有状态 */
   function reset() {
-    state.phase = 'idle'
-    state.agents.clear()
-    state.tasks = []
-    state.timeline = []
-    state.summary = null
-    state.elapsed = 0
-    state.duration = 0
-    _entryId = 0
+    state.phase = 'idle';
+    state.agents.clear();
+    state.tasks = [];
+    state.timeline = [];
+    state.summary = null;
+    state.elapsed = 0;
+    state.duration = 0;
+    _entryId = 0;
   }
 
   /** 推入一个事件（核心方法，Demo 回放和 Real API 都通过这个写入） */
   function pushEvent(event: ScenarioEvent) {
-    const agent = event.agent ? state.agents.get(event.agent) : undefined
+    const agent = event.agent ? state.agents.get(event.agent) : undefined;
 
     switch (event.type) {
       case 'agent_status':
         if (agent && event.status) {
-          const agentStatus = event.status as AgentStatus
-          agent.status = agentStatus
-          agent.expression = (agentStatus in AGENT_EMOJI) ? AGENT_EMOJI[agentStatus] : AGENT_EMOJI.idle
-          if (event.message) agent.message = event.message
+          const agentStatus = event.status as AgentStatus;
+          agent.status = agentStatus;
+          agent.expression = (agentStatus in AGENT_EMOJI) ? AGENT_EMOJI[agentStatus] : AGENT_EMOJI.idle;
+          if (event.message) agent.message = event.message;
         }
-        break
+        break;
 
       case 'task_created':
         if (event.task && typeof event.task === 'object') {
@@ -114,53 +114,53 @@ function createStore() {
             name: event.task.name,
             assignee: event.task.assignee,
             status: 'assigned',
-          })
+          });
         }
-        break
+        break;
 
       case 'task_status':
         if (event.task && typeof event.task === 'string') {
-          const task = state.tasks.find((t) => t.id === event.task)
+          const task = state.tasks.find((t) => t.id === event.task);
           if (task && event.status) {
-            task.status = (event.status as TaskState['status']) || task.status
+            task.status = (event.status as TaskState['status']) || task.status;
           }
         }
-        break
+        break;
 
       case 'review':
         {
-          const taskId = typeof event.task === 'string' ? event.task : undefined
+          const taskId = typeof event.task === 'string' ? event.task : undefined;
           if (taskId) {
-            const task = state.tasks.find((t) => t.id === taskId)
+            const task = state.tasks.find((t) => t.id === taskId);
             if (task) {
-              task.status = event.result === 'approved' ? 'done' : 'rework'
-              task.score = event.score
-              task.comment = event.comment
+              task.status = event.result === 'approved' ? 'done' : 'rework';
+              task.score = event.score;
+              task.comment = event.comment;
             }
           }
         }
-        break
+        break;
 
       case 'score_change':
         if (agent && event.delta !== undefined) {
-          agent.score += event.delta
-          if (event.total !== undefined) agent.score = event.total
+          agent.score += event.delta;
+          if (event.total !== undefined) agent.score = event.total;
         }
-        break
+        break;
 
       case 'reflection':
         // 反思日志，仅写入 timeline
         if (agent && event.content) {
-          agent.message = `💭 ${event.content}`
+          agent.message = `💭 ${event.content}`;
         }
-        break
+        break;
 
       case 'summary':
         if (event.data) {
-          state.summary = event.data
-          state.phase = 'result'
+          state.summary = event.data;
+          state.phase = 'result';
         }
-        break
+        break;
     }
 
     // 所有事件都写入 timeline
@@ -170,8 +170,8 @@ function createStore() {
       event,
       agentName: agent?.name,
       agentAvatar: agent?.avatar,
-    }
-    state.timeline.unshift(entry) // 最新在前
+    };
+    state.timeline.unshift(entry); // 最新在前
   }
 
   return {
@@ -181,15 +181,15 @@ function createStore() {
     initAgents,
     reset,
     pushEvent,
-  }
+  };
 }
 
 // 单例
-let _store: ReturnType<typeof createStore> | null = null
+let _store: ReturnType<typeof createStore> | null = null;
 
 export function useSimulationStore() {
   if (!_store) {
-    _store = createStore()
+    _store = createStore();
   }
-  return _store
+  return _store;
 }

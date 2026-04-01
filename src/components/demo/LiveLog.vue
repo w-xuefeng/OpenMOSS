@@ -1,109 +1,109 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
-import { useSimulationStore } from '@/composables/demo/useSimulationStore'
-import type { TimelineEntry } from '@/composables/demo/types'
+import { ref, watch, nextTick } from 'vue';
+import { useSimulationStore } from '@/composables/demo/useSimulationStore';
+import type { TimelineEntry } from '@/composables/demo/types';
 
-const store = useSimulationStore()
-const logRef = ref<HTMLElement | null>(null)
+const store = useSimulationStore();
+const logRef = ref<HTMLElement | null>(null);
 
 // 逐字打出效果：追踪正在打字的条目
-const typingEntryId = ref<string | null>(null)
-const typingText = ref('')
-let typingTimer: ReturnType<typeof setTimeout> | null = null
+const typingEntryId = ref<string | null>(null);
+const typingText = ref('');
+let typingTimer: ReturnType<typeof setTimeout> | null = null;
 
 function getLogIcon(entry: TimelineEntry): string {
   switch (entry.event.type) {
     case 'review':
-      return entry.event.result === 'approved' ? '✅' : '❌'
+      return entry.event.result === 'approved' ? '✅' : '❌';
     case 'reflection':
-      return '💭'
+      return '💭';
     case 'score_change':
-      return (entry.event.delta ?? 0) > 0 ? '⭐' : '💔'
+      return (entry.event.delta ?? 0) > 0 ? '⭐' : '💔';
     case 'task_created':
-      return '📋'
+      return '📋';
     default:
-      return entry.agentAvatar || '💬'
+      return entry.agentAvatar || '💬';
   }
 }
 
 function getLogMessage(entry: TimelineEntry): string {
-  const e = entry.event
+  const e = entry.event;
   switch (e.type) {
     case 'log':
-      return e.content || e.message || ''
+      return e.content || e.message || '';
     case 'agent_status':
-      return e.message || `${entry.agentName} 状态变更为 ${e.status}`
+      return e.message || `${entry.agentName} 状态变更为 ${e.status}`;
     case 'task_created': {
-      const taskName = typeof e.task === 'object' ? e.task.name : e.task
-      return e.message || `创建任务：${taskName}`
+      const taskName = typeof e.task === 'object' ? e.task.name : e.task;
+      return e.message || `创建任务：${taskName}`;
     }
     case 'review':
-      return `${e.result === 'approved' ? '通过' : '驳回'}（${e.score}/5）${e.comment || ''}`
+      return `${e.result === 'approved' ? '通过' : '驳回'}（${e.score}/5）${e.comment || ''}`;
     case 'reflection':
-      return `反思：${e.content}`
+      return `反思：${e.content}`;
     case 'score_change':
-      return `${(e.delta ?? 0) > 0 ? '+' : ''}${e.delta} ${e.reason || ''}`
+      return `${(e.delta ?? 0) > 0 ? '+' : ''}${e.delta} ${e.reason || ''}`;
     default:
-      return e.message || e.content || ''
+      return e.message || e.content || '';
   }
 }
 
 function getLogClass(entry: TimelineEntry): string {
-  const e = entry.event
-  if (e.type === 'review' && e.result === 'rejected') return 'log-entry--rejected'
-  if (e.type === 'review' && e.result === 'approved') return 'log-entry--approved'
-  if (e.type === 'reflection') return 'log-entry--reflection'
-  if (e.type === 'score_change' && (e.delta ?? 0) < 0) return 'log-entry--negative'
-  if (e.type === 'score_change' && (e.delta ?? 0) > 0) return 'log-entry--positive'
-  return ''
+  const e = entry.event;
+  if (e.type === 'review' && e.result === 'rejected') return 'log-entry--rejected';
+  if (e.type === 'review' && e.result === 'approved') return 'log-entry--approved';
+  if (e.type === 'reflection') return 'log-entry--reflection';
+  if (e.type === 'score_change' && (e.delta ?? 0) < 0) return 'log-entry--negative';
+  if (e.type === 'score_change' && (e.delta ?? 0) > 0) return 'log-entry--positive';
+  return '';
 }
 
 // 监听新日志，触发打字效果
 watch(
   () => store.state.timeline.length,
   () => {
-    const latest = store.state.timeline[0]
-    if (!latest) return
+    const latest = store.state.timeline[0];
+    if (!latest) return;
 
     // 只对 log / reflection / review 做打字效果
-    const typableTypes = ['log', 'reflection', 'review']
+    const typableTypes = ['log', 'reflection', 'review'];
     if (typableTypes.includes(latest.event.type)) {
-      startTyping(latest)
+      startTyping(latest);
     }
 
     nextTick(() => {
       if (logRef.value) {
-        logRef.value.scrollTop = 0
+        logRef.value.scrollTop = 0;
       }
-    })
+    });
   }
-)
+);
 
 function startTyping(entry: TimelineEntry) {
-  if (typingTimer) clearTimeout(typingTimer)
+  if (typingTimer) clearTimeout(typingTimer);
 
-  const fullText = getLogMessage(entry)
-  typingEntryId.value = entry.id
-  typingText.value = ''
+  const fullText = getLogMessage(entry);
+  typingEntryId.value = entry.id;
+  typingText.value = '';
 
-  let i = 0
+  let i = 0;
   function typeChar() {
     if (i < fullText.length) {
-      typingText.value += fullText[i]
-      i++
-      typingTimer = setTimeout(typeChar, 30 + Math.random() * 20)
+      typingText.value += fullText[i];
+      i++;
+      typingTimer = setTimeout(typeChar, 30 + Math.random() * 20);
     } else {
-      typingEntryId.value = null
+      typingEntryId.value = null;
     }
   }
-  typeChar()
+  typeChar();
 }
 
 function getDisplayText(entry: TimelineEntry): string {
   if (typingEntryId.value === entry.id) {
-    return typingText.value
+    return typingText.value;
   }
-  return getLogMessage(entry)
+  return getLogMessage(entry);
 }
 </script>
 

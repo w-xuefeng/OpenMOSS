@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Separator } from '@/components/ui/separator'
-import type { AgentSummary } from '@/composables/useActivityFeed'
-import { getActionCategory, getActionVerb, formatRelativeTime } from '@/composables/useActivityFeed'
+import { computed } from 'vue';
+import { Separator } from '@/components/ui/separator';
+import type { AgentSummary } from '@/composables/useActivityFeed';
+import { getActionCategory, getActionVerb, formatRelativeTime } from '@/composables/useActivityFeed';
 
 const props = defineProps<{
     agent: AgentSummary
     selected: boolean
     flashing: boolean
-}>()
+}>();
 
 defineEmits<{
     (e: 'select'): void
-}>()
+}>();
 
 const roleLabels: Record<string, string> = {
     planner: 'P', executor: 'E', reviewer: 'R', patrol: 'D',
-}
+};
 
 const roleFullName: Record<string, string> = {
     planner: '规划者', executor: '执行者', reviewer: '审查者', patrol: '巡查者',
-}
+};
 
 const categoryColors: Record<string, string> = {
     complete: 'bg-emerald-500',
@@ -29,7 +29,7 @@ const categoryColors: Record<string, string> = {
     query: 'bg-muted-foreground/40',
     score_up: 'bg-emerald-500',
     score_down: 'bg-rose-500',
-}
+};
 
 const actions = computed(() =>
     props.agent.recent_actions.map((a) => ({
@@ -37,7 +37,7 @@ const actions = computed(() =>
         time: formatRelativeTime(a.timestamp),
         category: getActionCategory(a),
     }))
-)
+);
 </script>
 
 <template>

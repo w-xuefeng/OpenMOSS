@@ -1,59 +1,59 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { Play, Github } from 'lucide-vue-next'
+import { ref, onMounted, onUnmounted } from 'vue';
+import { Play, Github } from 'lucide-vue-next';
 
 const emit = defineEmits<{
   startDemo: []
-}>()
+}>();
 
 // Typewriter
 const phrases = [
   'OpenMOSS AI 公司操作系统，让 AI Agent 帮你运营和管理公司的方方面面，24 小时自主运行、真人 0 接管，现已开源。',
   '4 种角色各司其职，全程零人工编排，7×24 无人值守。',
   '提交 → 审查 → 返工 → 再审，闭环质控保障每一份交付物。',
-]
+];
 
-const displayText = ref('')
-const prefix = ''
-let timer: ReturnType<typeof setTimeout> | null = null
-let phraseIdx = 0
-let charIdx = 0
-let isDeleting = false
+const displayText = ref('');
+const prefix = '';
+let timer: ReturnType<typeof setTimeout> | null = null;
+let phraseIdx = 0;
+let charIdx = 0;
+let isDeleting = false;
 
 function tick() {
-  const current = phrases[phraseIdx]!
+  const current = phrases[phraseIdx]!;
 
   if (!isDeleting) {
     // typing
-    charIdx++
-    displayText.value = current.slice(0, charIdx)
+    charIdx++;
+    displayText.value = current.slice(0, charIdx);
     if (charIdx >= current.length) {
       // pause then delete
-      timer = setTimeout(() => { isDeleting = true; tick() }, 2000)
-      return
+      timer = setTimeout(() => { isDeleting = true; tick(); }, 2000);
+      return;
     }
-    timer = setTimeout(tick, 60)
+    timer = setTimeout(tick, 60);
   } else {
     // deleting
-    charIdx--
-    displayText.value = current.slice(0, charIdx)
+    charIdx--;
+    displayText.value = current.slice(0, charIdx);
     if (charIdx <= 0) {
-      isDeleting = false
-      phraseIdx = (phraseIdx + 1) % phrases.length
-      timer = setTimeout(tick, 400)
-      return
+      isDeleting = false;
+      phraseIdx = (phraseIdx + 1) % phrases.length;
+      timer = setTimeout(tick, 400);
+      return;
     }
-    timer = setTimeout(tick, 30)
+    timer = setTimeout(tick, 30);
   }
 }
 
 onMounted(() => {
-  timer = setTimeout(tick, 800)
-})
+  timer = setTimeout(tick, 800);
+});
 
 onUnmounted(() => {
-  if (timer) clearTimeout(timer)
-})
+  if (timer) clearTimeout(timer);
+});
 </script>
 
 <template>

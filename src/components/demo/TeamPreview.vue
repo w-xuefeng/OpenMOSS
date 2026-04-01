@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { AgentDef } from '@/composables/demo/types'
-import { ROLE_COLORS } from '@/composables/demo/types'
+import { ref } from 'vue';
+import type { AgentDef } from '@/composables/demo/types';
+import { ROLE_COLORS } from '@/composables/demo/types';
 
 const props = defineProps<{
   agents: AgentDef[]
-}>()
+}>();
 
 const emit = defineEmits<{
   launch: [agents: AgentDef[]]
-}>()
+}>();
 
 // 可编辑的 Agent 名字副本
-const editableNames = ref<Record<string, string>>({})
+const editableNames = ref<Record<string, string>>({});
 
 function initNames() {
   for (const a of props.agents) {
-    editableNames.value[a.id] = a.name
+    editableNames.value[a.id] = a.name;
   }
 }
-initNames()
+initNames();
 
 // 角色中文名
 const roleLabels: Record<string, string> = {
@@ -27,14 +27,14 @@ const roleLabels: Record<string, string> = {
   executor: '执行者',
   reviewer: '审查者',
   patrol: '巡查员',
-}
+};
 
 function handleLaunch() {
   const updated = props.agents.map((a) => ({
     ...a,
     name: editableNames.value[a.id] || a.name,
-  }))
-  emit('launch', updated)
+  }));
+  emit('launch', updated);
 }
 </script>
 

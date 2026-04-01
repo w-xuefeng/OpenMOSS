@@ -1,96 +1,96 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
-import type { ScenarioData, AgentDef } from '@/composables/demo/types'
-import chaosScenario from '@/composables/demo/scenarios/chaos.json'
-import { useScenarioPlayer, useSimulationStore } from '@/composables/demo'
-import ScenarioSelector from '@/components/demo/ScenarioSelector.vue'
-import TeamPreview from '@/components/demo/TeamPreview.vue'
-import KanbanBoard from '@/components/demo/KanbanBoard.vue'
-import AgentCards from '@/components/demo/AgentCards.vue'
-import LiveLog from '@/components/demo/LiveLog.vue'
-import FloatingScore from '@/components/demo/FloatingScore.vue'
-import ResultPage from '@/components/demo/ResultPage.vue'
-import DemoNav from '@/components/demo/DemoNav.vue'
-import DemoHero from '@/components/demo/DemoHero.vue'
-import DemoBento from '@/components/demo/DemoBento.vue'
-import DemoFooter from '@/components/demo/DemoFooter.vue'
+import { ref, watch, nextTick } from 'vue';
+import type { ScenarioData, AgentDef } from '@/composables/demo/types';
+import chaosScenario from '@/composables/demo/scenarios/chaos.json';
+import { useScenarioPlayer, useSimulationStore } from '@/composables/demo';
+import ScenarioSelector from '@/components/demo/ScenarioSelector.vue';
+import TeamPreview from '@/components/demo/TeamPreview.vue';
+import KanbanBoard from '@/components/demo/KanbanBoard.vue';
+import AgentCards from '@/components/demo/AgentCards.vue';
+import LiveLog from '@/components/demo/LiveLog.vue';
+import FloatingScore from '@/components/demo/FloatingScore.vue';
+import ResultPage from '@/components/demo/ResultPage.vue';
+import DemoNav from '@/components/demo/DemoNav.vue';
+import DemoHero from '@/components/demo/DemoHero.vue';
+import DemoBento from '@/components/demo/DemoBento.vue';
+import DemoFooter from '@/components/demo/DemoFooter.vue';
 
 type Phase = 'select' | 'preview' | 'simulation' | 'result'
 
-const phase = ref<Phase>('select')
-const selectedScenario = ref<ScenarioData | null>(null)
-const player = useScenarioPlayer()
-const store = useSimulationStore()
+const phase = ref<Phase>('select');
+const selectedScenario = ref<ScenarioData | null>(null);
+const player = useScenarioPlayer();
+const store = useSimulationStore();
 
 // 自动切到结果页
 watch(() => store.state.phase, (p) => {
-  if (p === 'result') phase.value = 'result'
-})
+  if (p === 'result') phase.value = 'result';
+});
 
 // Phase 切换时滚回顶部
 watch(phase, () => {
   nextTick(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  })
-})
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
 
 function onSelectScenario(scenario: ScenarioData) {
-  selectedScenario.value = scenario
-  phase.value = 'preview'
+  selectedScenario.value = scenario;
+  phase.value = 'preview';
 }
 
 function onLaunch(agents: AgentDef[]) {
-  if (!selectedScenario.value) return
+  if (!selectedScenario.value) return;
   // 用用户可能修改过的名字更新场景
   const updated: ScenarioData = {
     ...selectedScenario.value,
     agents,
-  }
-  player.load(updated)
-  phase.value = 'simulation'
-  player.play()
+  };
+  player.load(updated);
+  phase.value = 'simulation';
+  player.play();
 }
 
 function goBack() {
   if (phase.value === 'preview') {
-    phase.value = 'select'
-    selectedScenario.value = null
+    phase.value = 'select';
+    selectedScenario.value = null;
   }
 }
 
 function restart() {
-  player.restart()
-  phase.value = 'simulation'
+  player.restart();
+  phase.value = 'simulation';
 }
 
 function onReselect() {
-  player.stop()
-  store.reset()
-  phase.value = 'select'
-  selectedScenario.value = null
+  player.stop();
+  store.reset();
+  phase.value = 'select';
+  selectedScenario.value = null;
 }
 
 function onChaos() {
-  const data = chaosScenario as unknown as ScenarioData
-  selectedScenario.value = data
-  player.load(data)
-  phase.value = 'simulation'
-  player.play()
+  const data = chaosScenario as unknown as ScenarioData;
+  selectedScenario.value = data;
+  player.load(data);
+  phase.value = 'simulation';
+  player.play();
 }
 
 function togglePlay() {
   if (player.playing.value) {
-    player.pause()
+    player.pause();
   } else {
-    player.play()
+    player.play();
   }
 }
 
-const speeds = [0.1, 0.25, 0.5, 1, 2, 3]
+const speeds = [0.1, 0.25, 0.5, 1, 2, 3];
 
 function onSpeedChange(e: Event) {
-  const val = parseFloat((e.target as HTMLSelectElement).value)
-  player.setSpeed(val)
+  const val = parseFloat((e.target as HTMLSelectElement).value);
+  player.setSpeed(val);
 }
 
 function scrollToDemo() {

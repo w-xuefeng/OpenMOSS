@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { setupApi } from '@/api/client'
-import { clipboardCopy } from '@/lib/clipboard'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { ChevronRight, ChevronLeft, Check, Copy, RefreshCw } from 'lucide-vue-next'
+import { ref, computed, onMounted } from 'vue';
+import { setupApi } from '@/api/client';
+import { clipboardCopy } from '@/lib/clipboard';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { ChevronRight, ChevronLeft, Check, Copy, RefreshCw } from 'lucide-vue-next';
 
 
 // 向导步骤
-const currentStep = ref(0)
-const totalSteps = 5
-const loading = ref(false)
-const error = ref('')
-const showRegistrationToken = ref(false)
-const resultToken = ref('')
-const alreadyInitialized = ref(false)
-const pageLoading = ref(true)
+const currentStep = ref(0);
+const totalSteps = 5;
+const loading = ref(false);
+const error = ref('');
+const showRegistrationToken = ref(false);
+const resultToken = ref('');
+const alreadyInitialized = ref(false);
+const pageLoading = ref(true);
 
 onMounted(async () => {
     try {
-        const { data } = await setupApi.status()
+        const { data } = await setupApi.status();
         if (data.initialized) {
-            alreadyInitialized.value = true
+            alreadyInitialized.value = true;
         }
     } catch {
         // 接口异常，允许继续
     } finally {
-        pageLoading.value = false
+        pageLoading.value = false;
     }
-})
+});
 
 // 表单数据
 const form = ref({
@@ -42,27 +42,27 @@ const form = ref({
     registrationToken: generateToken(),
     externalUrl: '',
     notificationChannels: '',
-})
+});
 // Switch 状态独立声明（reka-ui Switch 对嵌套 ref 属性兼容性差）
-const allowRegistration = ref(true)
-const notificationEnabled = ref(false)
+const allowRegistration = ref(true);
+const notificationEnabled = ref(false);
 
 function generateToken() {
-    const chars = 'abcdef0123456789'
-    let result = ''
+    const chars = 'abcdef0123456789';
+    let result = '';
     for (let i = 0; i < 32; i++) {
-        result += chars[Math.floor(Math.random() * chars.length)]
+        result += chars[Math.floor(Math.random() * chars.length)];
     }
-    return result
+    return result;
 }
 
 function regenerateToken() {
-    form.value.registrationToken = generateToken()
+    form.value.registrationToken = generateToken();
 }
 
 async function copyToken(text: string) {
     try {
-        await clipboardCopy(text)
+        await clipboardCopy(text);
     } catch {
         // 静默失败
     }
@@ -70,68 +70,68 @@ async function copyToken(text: string) {
 
 // 步骤验证
 const stepErrors = computed(() => {
-    const errors: Record<number, string> = {}
+    const errors: Record<number, string> = {};
 
     // Step 0: 密码
     if (currentStep.value >= 0 && form.value.adminPassword.length > 0 && form.value.adminPassword.length < 6) {
-        errors[0] = '密码至少 6 位'
+        errors[0] = '密码至少 6 位';
     }
     if (currentStep.value >= 0 && form.value.confirmPassword && form.value.adminPassword !== form.value.confirmPassword) {
-        errors[0] = '两次输入的密码不一致'
+        errors[0] = '两次输入的密码不一致';
     }
 
     // Step 1: 项目信息
     if (currentStep.value >= 1 && form.value.projectName.length === 0) {
-        errors[1] = '请输入项目名称'
+        errors[1] = '请输入项目名称';
     }
 
-    return errors
-})
+    return errors;
+});
 
 const canProceed = computed(() => {
     switch (currentStep.value) {
         case 0:
             return form.value.adminPassword.length >= 6
-                && form.value.adminPassword === form.value.confirmPassword
+                && form.value.adminPassword === form.value.confirmPassword;
         case 1:
-            return form.value.projectName.length > 0 && form.value.workspaceRoot.length > 0
+            return form.value.projectName.length > 0 && form.value.workspaceRoot.length > 0;
         case 2:
-            return form.value.registrationToken.length > 0
+            return form.value.registrationToken.length > 0;
         case 3: // 服务地址（可跳过）
-            return true
+            return true;
         case 4: // 通知（可跳过）
-            return true
+            return true;
         default:
-            return false
+            return false;
     }
-})
+});
 
 function nextStep() {
     if (currentStep.value < totalSteps - 1 && canProceed.value) {
-        currentStep.value++
-        error.value = ''
+        currentStep.value++;
+        error.value = '';
     }
 }
 
 function prevStep() {
     if (currentStep.value > 0) {
-        currentStep.value--
-        error.value = ''
+        currentStep.value--;
+        error.value = '';
     }
 }
 
 async function handleSubmit() {
-    if (!canProceed.value) return
+    if (!canProceed.value) return;
 
-    loading.value = true
-    error.value = ''
+    loading.value = true;
+    error.value = '';
 
     try {
         // 解析通知渠道
         const channels = form.value.notificationChannels
             .split('\n')
             .map(c => c.trim())
-            .filter(c => c.length > 0)
+            .filter(c => c.length > 0);
 
         const res = await setupApi.initialize({
             admin_password: form.value.adminPassword,
@@ -145,21 +145,21 @@ async function handleSubmit() {
                 channels,
                 events: ['task_completed', 'review_rejected', 'all_done', 'patrol_alert'],
             } : undefined,
-        })
+        });
 
-        resultToken.value = res.data.registration_token
-        showRegistrationToken.value = true
+        resultToken.value = res.data.registration_token;
+        showRegistrationToken.value = true;
     } catch (e: unknown) {
-        const err = e as { response?: { data?: { detail?: string } } }
-        error.value = err.response?.data?.detail || '初始化失败，请重试'
+        const err = e as { response?: { data?: { detail?: string } } };
+        error.value = err.response?.data?.detail || '初始化失败，请重试';
     } finally {
-        loading.value = false
+        loading.value = false;
     }
 }
 
 function goToLogin() {
     // 初始化完成后跳转登录，带 from=setup 标记以便登录后跳转到提示词管理
-    window.location.href = '/login?from=setup'
+    window.location.href = '/login?from=setup';
 }
 
 const steps = [
@@ -168,7 +168,7 @@ const steps = [
     { title: 'Agent 注册', desc: '设置 Agent 注册令牌' },
     { title: '服务地址', desc: '配置 Agent 对接的服务访问地址' },
     { title: '通知渠道', desc: '配置消息通知（可跳过）' },
-]
+];
 </script>
 
 <template>

@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
-const router = useRouter()
-const route = useRoute()
-const auth = useAuthStore()
+const router = useRouter();
+const route = useRoute();
+const auth = useAuthStore();
 
-const password = ref('')
-const loading = ref(false)
-const error = ref('')
+const password = ref('');
+const loading = ref(false);
+const error = ref('');
 
 async function handleLogin() {
     if (!password.value) {
-        error.value = '请输入密码'
-        return
+        error.value = '请输入密码';
+        return;
     }
-    loading.value = true
-    error.value = ''
+    loading.value = true;
+    error.value = '';
     try {
-        await auth.login(password.value)
+        await auth.login(password.value);
         // 初始化完成后跳转提示词管理，否则跳转仪表盘
-        const target = route.query.from === 'setup' ? '/prompts' : '/dashboard'
-        router.push(target)
+        const target = route.query.from === 'setup' ? '/prompts' : '/dashboard';
+        router.push(target);
     } catch (e: unknown) {
-        const err = e as { response?: { data?: { detail?: string } } }
-        error.value = err.response?.data?.detail || '登录失败，请检查密码'
+        const err = e as { response?: { data?: { detail?: string } } };
+        error.value = err.response?.data?.detail || '登录失败，请检查密码';
     } finally {
-        loading.value = false
+        loading.value = false;
     }
 }
 </script>

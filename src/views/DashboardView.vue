@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, reactive, nextTick } from 'vue'
+import { ref, onMounted, computed, reactive, nextTick } from 'vue';
 import {
     adminDashboardApi,
     type DashboardOverview,
     type DashboardHighlights,
     type DashboardTrends,
-} from '@/api/client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+} from '@/api/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import {
     ListTodo,
     Activity,
@@ -26,84 +26,84 @@ import {
     Zap,
     Moon,
     Star,
-} from 'lucide-vue-next'
+} from 'lucide-vue-next';
 
-const loading = ref(true)
-const error = ref('')
-const data = ref<DashboardOverview | null>(null)
-const highlights = ref<DashboardHighlights | null>(null)
-const trends = ref<DashboardTrends | null>(null)
+const loading = ref(true);
+const error = ref('');
+const data = ref<DashboardOverview | null>(null);
+const highlights = ref<DashboardHighlights | null>(null);
+const trends = ref<DashboardTrends | null>(null);
 
 onMounted(() => {
-    void loadData()
-})
+    void loadData();
+});
 
 async function loadData() {
-    loading.value = true
-    error.value = ''
+    loading.value = true;
+    error.value = '';
     try {
         const [overviewRes, highlightsRes, trendsRes] = await Promise.all([
             adminDashboardApi.overview(),
             adminDashboardApi.highlights({ limit: 5 }),
             adminDashboardApi.trends({ days: 7 }),
-        ])
-        data.value = overviewRes.data
-        highlights.value = highlightsRes.data
-        trends.value = trendsRes.data
-        await nextTick()
-        triggerAnimations()
+        ]);
+        data.value = overviewRes.data;
+        highlights.value = highlightsRes.data;
+        trends.value = trendsRes.data;
+        await nextTick();
+        triggerAnimations();
     } catch (e) {
-        console.error('Failed to load dashboard', e)
-        error.value = '仪表盘数据加载失败'
+        console.error('Failed to load dashboard', e);
+        error.value = '仪表盘数据加载失败';
     } finally {
-        loading.value = false
+        loading.value = false;
     }
 }
 
 function formatRelativeTime(value: string | null) {
-    if (!value) return '—'
-    const now = Date.now()
-    const time = new Date(value).getTime()
-    if (Number.isNaN(time)) return '—'
-    const diff = Math.floor((now - time) / 1000)
-    if (diff < 60) return '刚刚'
-    if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`
-    if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`
-    return `${Math.floor(diff / 86400)} 天前`
+    if (!value) return '—';
+    const now = Date.now();
+    const time = new Date(value).getTime();
+    if (Number.isNaN(time)) return '—';
+    const diff = Math.floor((now - time) / 1000);
+    if (diff < 60) return '刚刚';
+    if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
+    return `${Math.floor(diff / 86400)} 天前`;
 }
 
 const roleLabels: Record<string, string> = {
     planner: '规划者', executor: '执行者', reviewer: '审查者', patrol: '巡查者',
-}
+};
 
 function hasHighlights(h: DashboardHighlights) {
     return h.blocked_sub_tasks.length > 0 || h.pending_review_sub_tasks.length > 0
-        || h.busy_agents.length > 0 || h.low_activity_agents.length > 0 || h.recent_reviews.length > 0
+        || h.busy_agents.length > 0 || h.low_activity_agents.length > 0 || h.recent_reviews.length > 0;
 }
 
 // ─── 数字滚动动画 ───
 
-const animatedValues = reactive<Record<string, number>>({})
+const animatedValues = reactive<Record<string, number>>({});
 
 function animateCountUp(key: string, target: number, duration = 800) {
-    const start = animatedValues[key] || 0
-    const diff = target - start
-    if (diff === 0) { animatedValues[key] = target; return }
-    const startTime = performance.now()
+    const start = animatedValues[key] || 0;
+    const diff = target - start;
+    if (diff === 0) { animatedValues[key] = target; return; }
+    const startTime = performance.now();
     function tick(now: number) {
-        const elapsed = now - startTime
-        const progress = Math.min(elapsed / duration, 1)
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
         // easeOutCubic
-        const eased = 1 - Math.pow(1 - progress, 3)
-        animatedValues[key] = Math.round(start + diff * eased)
-        if (progress < 1) requestAnimationFrame(tick)
+        const eased = 1 - Math.pow(1 - progress, 3);
+        animatedValues[key] = Math.round(start + diff * eased);
+        if (progress < 1) requestAnimationFrame(tick);
     }
-    requestAnimationFrame(tick)
+    requestAnimationFrame(tick);
 }
 
 function triggerAnimations() {
-    if (!data.value) return
-    const c = data.value.core_cards
+    if (!data.value) return;
+    const c = data.value.core_cards;
     const entries: [string, number][] = [
         ['open_task_count', c.open_task_count],
         ['active_sub_task_count', c.active_sub_task_count],
@@ -111,13 +111,13 @@ function triggerAnimations() {
         ['blocked_sub_task_count', c.blocked_sub_task_count],
         ['active_agent_count', c.active_agent_count],
         ['today_completed_sub_task_count', c.today_completed_sub_task_count],
-    ]
+    ];
     entries.forEach(([key, val], i) => {
-        setTimeout(() => animateCountUp(key, val, 900), i * 80)
-    })
+        setTimeout(() => animateCountUp(key, val, 900), i * 80);
+    });
     // trend totals
     if (trends.value) {
-        const t = trends.value
+        const t = trends.value;
         const trendTotals: [string, number][] = [
             ['trend_created', t.sub_task_created_trend.reduce((a, b) => a + b.count, 0)],
             ['trend_completed', t.sub_task_completed_trend.reduce((a, b) => a + b.count, 0)],
@@ -125,17 +125,17 @@ function triggerAnimations() {
             ['trend_score', t.score_delta_trend.reduce((a, b) => a + b.net_score_delta, 0)],
             ['trend_request', t.request_trend.reduce((a, b) => a + b.count, 0)],
             ['trend_activity', t.activity_trend.reduce((a, b) => a + b.count, 0)],
-        ]
+        ];
         trendTotals.forEach(([key, val], i) => {
-            setTimeout(() => animateCountUp(key, val, 800), 800 + i * 60)
-        })
+            setTimeout(() => animateCountUp(key, val, 800), 800 + i * 60);
+        });
     }
 }
 
 // ─── 核心卡片配置 ───
 const coreCards = computed(() => {
-    if (!data.value) return []
-    const c = data.value.core_cards
+    if (!data.value) return [];
+    const c = data.value.core_cards;
     return [
         { title: '开放任务', value: c.open_task_count, animKey: 'open_task_count', icon: ListTodo, color: 'text-blue-500', bg: 'bg-blue-500/10' },
         { title: '活跃子任务', value: c.active_sub_task_count, animKey: 'active_sub_task_count', icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
@@ -143,8 +143,8 @@ const coreCards = computed(() => {
         { title: '阻塞子任务', value: c.blocked_sub_task_count, animKey: 'blocked_sub_task_count', icon: AlertTriangle, color: 'text-rose-500', bg: 'bg-rose-500/10' },
         { title: '活跃 Agent', value: c.active_agent_count, animKey: 'active_agent_count', icon: Users, color: 'text-violet-500', bg: 'bg-violet-500/10' },
         { title: '今日完成', value: c.today_completed_sub_task_count, animKey: 'today_completed_sub_task_count', icon: CheckCircle2, color: 'text-teal-500', bg: 'bg-teal-500/10' },
-    ]
-})
+    ];
+});
 
 // ─── 分布图表辅助 ───
 const statusLabels: Record<string, string> = {
@@ -158,7 +158,7 @@ const statusLabels: Record<string, string> = {
     planner: '规划者', executor: '执行者', reviewer: '审查者', patrol: '巡查者',
     // review result
     approved: '通过', rejected: '驳回',
-}
+};
 
 const statusColors: Record<string, string> = {
     planning: 'bg-slate-400', active: 'bg-blue-500', in_progress: 'bg-amber-500',
@@ -168,33 +168,33 @@ const statusColors: Record<string, string> = {
     disabled: 'bg-gray-400',
     planner: 'bg-violet-500', executor: 'bg-sky-500', reviewer: 'bg-amber-500', patrol: 'bg-teal-500',
     approved: 'bg-emerald-500', rejected: 'bg-rose-500',
-}
+};
 
 function distTotal(dist: Record<string, number>) {
-    return Object.values(dist).reduce((a, b) => a + b, 0)
+    return Object.values(dist).reduce((a, b) => a + b, 0);
 }
 
 function distPercent(count: number, total: number) {
-    if (total === 0) return 0
-    return Math.round((count / total) * 100)
+    if (total === 0) return 0;
+    return Math.round((count / total) * 100);
 }
 
 // ─── 趋势图 SVG 工具 ───
 
-const SPARK_W = 200
-const SPARK_H = 40
+const SPARK_W = 200;
+const SPARK_H = 40;
 
 function buildSparklinePath(values: number[]): { line: string; area: string } {
-    if (!values.length) return { line: '', area: '' }
-    const max = Math.max(...values, 1)
-    const step = SPARK_W / Math.max(values.length - 1, 1)
+    if (!values.length) return { line: '', area: '' };
+    const max = Math.max(...values, 1);
+    const step = SPARK_W / Math.max(values.length - 1, 1);
     const points = values.map((v, i) => ({
         x: i * step,
         y: SPARK_H - (v / max) * (SPARK_H - 4) - 2,
-    }))
-    const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
-    const area = line + ` L${SPARK_W},${SPARK_H} L0,${SPARK_H} Z`
-    return { line, area }
+    }));
+    const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const area = line + ` L${SPARK_W},${SPARK_H} L0,${SPARK_H} Z`;
+    return { line, area };
 }
 
 interface TrendCard {
@@ -211,25 +211,25 @@ interface TrendCard {
 const hoverState = reactive<{ cardIdx: number; pointIdx: number }>({
     cardIdx: -1,
     pointIdx: -1,
-})
+});
 
 function getSparkPoint(values: number[], idx: number) {
-    if (idx < 0 || idx >= values.length) return { x: 0, y: 0 }
-    const max = Math.max(...values, 1)
-    const step = SPARK_W / Math.max(values.length - 1, 1)
+    if (idx < 0 || idx >= values.length) return { x: 0, y: 0 };
+    const max = Math.max(...values, 1);
+    const step = SPARK_W / Math.max(values.length - 1, 1);
     return {
         x: idx * step,
         y: SPARK_H - ((values[idx] ?? 0) / max) * (SPARK_H - 4) - 2,
-    }
+    };
 }
 
 function formatShortDate(d: string) {
-    return d.slice(5) // "2026-03-15" -> "03-15"
+    return d.slice(5); // "2026-03-15" -> "03-15"
 }
 
 const trendCards = computed<TrendCard[]>(() => {
-    if (!trends.value) return []
-    const t = trends.value
+    if (!trends.value) return [];
+    const t = trends.value;
     return [
         {
             title: '新建子任务',
@@ -285,8 +285,8 @@ const trendCards = computed<TrendCard[]>(() => {
             values: t.activity_trend.map(p => p.count),
             dates: t.activity_trend.map(p => p.date),
         },
-    ]
-})</script>
+    ];
+});</script>
 
 <template>
     <div class="flex flex-col h-[calc(100vh-3.5rem)] overflow-y-auto">

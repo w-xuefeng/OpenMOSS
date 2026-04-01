@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import { useDebounceFn } from '@vueuse/core'
+import { onMounted, ref, watch } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
 import {
     adminReviewApi,
     type AdminReviewListItem,
     type AdminReviewDetail,
     type AdminPageResponse,
-} from '@/api/client'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
-import { TooltipProvider } from '@/components/ui/tooltip'
+} from '@/api/client';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import {
     Search,
     RefreshCw,
@@ -22,29 +22,29 @@ import {
     ArrowRight,
     CheckCircle2,
     XCircle,
-} from 'lucide-vue-next'
+} from 'lucide-vue-next';
 
 // ─── 状态 ───
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 20;
 
-const keyword = ref('')
-const resultFilter = ref('all')
-const page = ref(1)
+const keyword = ref('');
+const resultFilter = ref('all');
+const page = ref(1);
 
-const loading = ref(false)
-const loadingDetail = ref(false)
-const listError = ref('')
-const detailError = ref('')
+const loading = ref(false);
+const loadingDetail = ref(false);
+const listError = ref('');
+const detailError = ref('');
 
-const selectedReviewId = ref<string | null>(null)
-const selectedReview = ref<AdminReviewDetail | null>(null)
+const selectedReviewId = ref<string | null>(null);
+const selectedReview = ref<AdminReviewDetail | null>(null);
 
-const pageData = ref<AdminPageResponse<AdminReviewListItem>>(createEmptyPage())
+const pageData = ref<AdminPageResponse<AdminReviewListItem>>(createEmptyPage());
 
-let listRequestId = 0
-let detailRequestId = 0
-const detailKey = ref(0)
+let listRequestId = 0;
+let detailRequestId = 0;
+const detailKey = ref(0);
 
 // ─── 选项 ───
 
@@ -52,59 +52,59 @@ const resultOptions = [
     { value: 'all', label: '全部结果' },
     { value: 'approved', label: '✅ 通过' },
     { value: 'rejected', label: '❌ 驳回' },
-]
+];
 
 // ─── 工具函数 ───
 
 function createEmptyPage<T = unknown>(): AdminPageResponse<T> {
-    return { items: [] as T[], total: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, has_more: false }
+    return { items: [] as T[], total: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, has_more: false };
 }
 
 function formatDate(value: string | null) {
-    if (!value) return '—'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat('zh-CN', {
         month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
-    }).format(date)
+    }).format(date);
 }
 
 function formatRelativeTime(value: string | null) {
-    if (!value) return ''
-    const now = Date.now()
-    const time = new Date(value).getTime()
-    if (Number.isNaN(time)) return ''
-    const diff = Math.floor((now - time) / 1000)
-    if (diff < 60) return '刚刚'
-    if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`
-    if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`
-    return `${Math.floor(diff / 86400)} 天前`
+    if (!value) return '';
+    const now = Date.now();
+    const time = new Date(value).getTime();
+    if (Number.isNaN(time)) return '';
+    const diff = Math.floor((now - time) / 1000);
+    if (diff < 60) return '刚刚';
+    if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
+    return `${Math.floor(diff / 86400)} 天前`;
 }
 
 function scoreStars(score: number) {
-    return '★'.repeat(Math.max(0, Math.min(5, score))) + '☆'.repeat(Math.max(0, 5 - score))
+    return '★'.repeat(Math.max(0, Math.min(5, score))) + '☆'.repeat(Math.max(0, 5 - score));
 }
 
 // ─── 数据加载 ───
 
 const reloadDebounced = useDebounceFn(() => {
-    page.value = 1
-    void loadList()
-}, 280)
+    page.value = 1;
+    void loadList();
+}, 280);
 
 watch([keyword, resultFilter], () => {
-    loading.value = true
-    reloadDebounced()
-})
+    loading.value = true;
+    reloadDebounced();
+});
 
 onMounted(() => {
-    void loadList()
-})
+    void loadList();
+});
 
 async function loadList() {
-    const rid = ++listRequestId
-    loading.value = true
-    listError.value = ''
+    const rid = ++listRequestId;
+    loading.value = true;
+    listError.value = '';
 
     try {
         const response = await adminReviewApi.list({
@@ -113,64 +113,64 @@ async function loadList() {
             keyword: keyword.value.trim() || undefined,
             result: resultFilter.value === 'all' ? undefined : resultFilter.value,
             sort_order: 'desc',
-        })
-        if (rid !== listRequestId) return
-        pageData.value = response.data
+        });
+        if (rid !== listRequestId) return;
+        pageData.value = response.data;
 
-        const firstItem = response.data.items[0]
+        const firstItem = response.data.items[0];
         if (!firstItem) {
-            selectedReviewId.value = null
-            selectedReview.value = null
-            return
+            selectedReviewId.value = null;
+            selectedReview.value = null;
+            return;
         }
-        const currentIds = new Set(response.data.items.map(i => i.id))
+        const currentIds = new Set(response.data.items.map(i => i.id));
         const nextId =
             selectedReviewId.value && currentIds.has(selectedReviewId.value)
                 ? selectedReviewId.value
-                : firstItem.id
+                : firstItem.id;
         if (nextId !== selectedReviewId.value) {
-            selectedReviewId.value = nextId
-            void loadDetail(nextId)
+            selectedReviewId.value = nextId;
+            void loadDetail(nextId);
         }
     } catch (e) {
-        if (rid !== listRequestId) return
-        console.error('Failed to load reviews', e)
-        listError.value = '审查记录加载失败，请重试。'
+        if (rid !== listRequestId) return;
+        console.error('Failed to load reviews', e);
+        listError.value = '审查记录加载失败，请重试。';
     } finally {
-        if (rid === listRequestId) loading.value = false
+        if (rid === listRequestId) loading.value = false;
     }
 }
 
 async function loadDetail(reviewId: string) {
-    const rid = ++detailRequestId
-    loadingDetail.value = true
-    detailError.value = ''
+    const rid = ++detailRequestId;
+    loadingDetail.value = true;
+    detailError.value = '';
 
     try {
-        const response = await adminReviewApi.get(reviewId)
-        if (rid !== detailRequestId || selectedReviewId.value !== reviewId) return
-        selectedReview.value = response.data
-        detailKey.value++
+        const response = await adminReviewApi.get(reviewId);
+        if (rid !== detailRequestId || selectedReviewId.value !== reviewId) return;
+        selectedReview.value = response.data;
+        detailKey.value++;
     } catch (e) {
-        if (rid !== detailRequestId) return
-        console.error('Failed to load review detail', e)
-        detailError.value = '详情加载失败，请重试。'
-        selectedReview.value = null
+        if (rid !== detailRequestId) return;
+        console.error('Failed to load review detail', e);
+        detailError.value = '详情加载失败，请重试。';
+        selectedReview.value = null;
     } finally {
-        if (rid === detailRequestId) loadingDetail.value = false
+        if (rid === detailRequestId) loadingDetail.value = false;
     }
 }
 
 function selectReview(id: string) {
-    if (selectedReviewId.value === id) return
-    selectedReviewId.value = id
-    void loadDetail(id)
+    if (selectedReviewId.value === id) return;
+    selectedReviewId.value = id;
+    void loadDetail(id);
 }
 
 function goToPage(p: number) {
-    if (p < 1 || p > pageData.value.total_pages || p === page.value) return
-    page.value = p
-    void loadList()
+    if (p < 1 || p > pageData.value.total_pages || p === page.value) return;
+    page.value = p;
+    void loadList();
 }
 </script>
 

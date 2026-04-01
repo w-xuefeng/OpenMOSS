@@ -1,61 +1,61 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { useSimulationStore } from '@/composables/demo/useSimulationStore'
-import { ROLE_COLORS } from '@/composables/demo/types'
-import { RotateCcw, ShieldAlert, LayoutGrid, Rocket } from 'lucide-vue-next'
+import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { useSimulationStore } from '@/composables/demo/useSimulationStore';
+import { ROLE_COLORS } from '@/composables/demo/types';
+import { RotateCcw, ShieldAlert, LayoutGrid, Rocket } from 'lucide-vue-next';
 
 const emit = defineEmits<{
   restart: []
   chaos: []
   reselect: []
-}>()
+}>();
 
-const store = useSimulationStore()
-const summary = computed(() => store.state.summary)
-const agents = computed(() => store.agentList.value)
+const store = useSimulationStore();
+const summary = computed(() => store.state.summary);
+const agents = computed(() => store.agentList.value);
 
 // 数字滚动动画
 function useCountUp(target: number, duration = 1500) {
-  const current = ref(0)
-  let startTime: number | null = null
-  let raf: number | null = null
+  const current = ref(0);
+  let startTime: number | null = null;
+  let raf: number | null = null;
 
   function animate(timestamp: number) {
-    if (!startTime) startTime = timestamp
-    const progress = Math.min((timestamp - startTime) / duration, 1)
+    if (!startTime) startTime = timestamp;
+    const progress = Math.min((timestamp - startTime) / duration, 1);
     // easeOutQuart
-    const ease = 1 - Math.pow(1 - progress, 4)
-    current.value = Math.round(target * ease)
+    const ease = 1 - Math.pow(1 - progress, 4);
+    current.value = Math.round(target * ease);
     if (progress < 1) {
-      raf = requestAnimationFrame(animate)
+      raf = requestAnimationFrame(animate);
     }
   }
 
-  onMounted(() => { raf = requestAnimationFrame(animate) })
-  onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
+  onMounted(() => { raf = requestAnimationFrame(animate); });
+  onUnmounted(() => { if (raf) cancelAnimationFrame(raf); });
 
-  return current
+  return current;
 }
 
-const tasksCount = computed(() => summary.value?.tasks_completed ?? 0)
-const avgScore = computed(() => summary.value?.average_score ?? 0)
-const reworkCount = computed(() => summary.value?.rework_count ?? 0)
-const tokensUsed = computed(() => summary.value?.tokens_used ?? 0)
+const tasksCount = computed(() => summary.value?.tasks_completed ?? 0);
+const avgScore = computed(() => summary.value?.average_score ?? 0);
+const reworkCount = computed(() => summary.value?.rework_count ?? 0);
+const tokensUsed = computed(() => summary.value?.tokens_used ?? 0);
 const tokenCost = computed(() => {
   // 1元/百万Token
-  const cost = tokensUsed.value / 1000000
-  return cost < 0.01 ? '< ¥0.01' : `¥${cost.toFixed(2)}`
-})
+  const cost = tokensUsed.value / 1000000;
+  return cost < 0.01 ? '< ¥0.01' : `¥${cost.toFixed(2)}`;
+});
 
-const animTasks = useCountUp(tasksCount.value)
-const animTokens = useCountUp(tokensUsed.value, 2000)
+const animTasks = useCountUp(tasksCount.value);
+const animTokens = useCountUp(tokensUsed.value, 2000);
 
 // 为每个 Agent 生成成长评语
 function getAgentComment(agent: { score: number; role: string; name: string }): string {
-  if (agent.score >= 105) return '表现优秀！持续高质量输出 🌟'
-  if (agent.score >= 100) return '稳定发挥，按时完成任务 ✓'
-  if (agent.score >= 95) return '经历返工后有所成长 📈'
-  return '需要更多训练和指导 💪'
+  if (agent.score >= 105) return '表现优秀！持续高质量输出 🌟';
+  if (agent.score >= 100) return '稳定发挥，按时完成任务 ✓';
+  if (agent.score >= 95) return '经历返工后有所成长 📈';
+  return '需要更多训练和指导 💪';
 }
 </script>
 

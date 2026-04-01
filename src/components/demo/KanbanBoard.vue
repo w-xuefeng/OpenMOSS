@@ -1,78 +1,78 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { useSimulationStore } from '@/composables/demo/useSimulationStore'
-import { ROLE_COLORS } from '@/composables/demo/types'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { useSimulationStore } from '@/composables/demo/useSimulationStore';
+import { ROLE_COLORS } from '@/composables/demo/types';
 
-const store = useSimulationStore()
-const kanbanRef = ref<HTMLElement | null>(null)
+const store = useSimulationStore();
+const kanbanRef = ref<HTMLElement | null>(null);
 
 const columns = [
   { key: 'pending', label: '📋 待分配', color: '#8C8A84' },
   { key: 'working', label: '⚡ 执行中', color: '#4A7FA5' },
   { key: 'review', label: '🔍 审查中', color: '#C09840' },
   { key: 'done', label: '✅ 已完成', color: '#4A7A5E' },
-]
+];
 
 // 合并 assigned→pending, rework→working 以简化显示
 const columnTasks = computed(() => {
-  const tasks = store.tasksByStatus.value
+  const tasks = store.tasksByStatus.value;
   return {
     pending: [...(tasks.pending || []), ...(tasks.assigned || [])],
     working: [...(tasks.working || []), ...(tasks.rework || [])],
     review: tasks.review || [],
     done: tasks.done || [],
-  }
-})
+  };
+});
 
 function getAgentName(agentId: string) {
-  return store.state.agents.get(agentId)?.name || agentId
+  return store.state.agents.get(agentId)?.name || agentId;
 }
 
 function getAgentColor(agentId: string) {
-  const agent = store.state.agents.get(agentId)
-  return agent ? ROLE_COLORS[agent.role] : '#94a3b8'
+  const agent = store.state.agents.get(agentId);
+  return agent ? ROLE_COLORS[agent.role] : '#94a3b8';
 }
 
 function isReworking(taskId: string) {
-  const tasks = store.tasksByStatus.value
-  return (tasks.rework || []).some(t => t.id === taskId)
+  const tasks = store.tasksByStatus.value;
+  return (tasks.rework || []).some(t => t.id === taskId);
 }
 
 // ─── 返工弧线箭头动画 ───────────────────────
-const showArrow = ref(false)
-const arrowPath = ref('')
-const arrowViewBox = ref('0 0 100 100')
-const arrowStyle = ref<Record<string, string>>({})
+const showArrow = ref(false);
+const arrowPath = ref('');
+const arrowViewBox = ref('0 0 100 100');
+const arrowStyle = ref<Record<string, string>>({});
 
 function animateReworkArrow() {
-  if (!kanbanRef.value) return
+  if (!kanbanRef.value) return;
 
-  const reviewCol = kanbanRef.value.querySelectorAll('.kanban-col')[2]
-  const workingCol = kanbanRef.value.querySelectorAll('.kanban-col')[1]
-  if (!reviewCol || !workingCol) return
+  const reviewCol = kanbanRef.value.querySelectorAll('.kanban-col')[2];
+  const workingCol = kanbanRef.value.querySelectorAll('.kanban-col')[1];
+  if (!reviewCol || !workingCol) return;
 
-  const kanbanRect = kanbanRef.value.getBoundingClientRect()
-  const reviewRect = reviewCol.getBoundingClientRect()
-  const workingRect = workingCol.getBoundingClientRect()
+  const kanbanRect = kanbanRef.value.getBoundingClientRect();
+  const reviewRect = reviewCol.getBoundingClientRect();
+  const workingRect = workingCol.getBoundingClientRect();
 
   // 弧线起点：审查列中间偏上
-  const startX = reviewRect.left + reviewRect.width / 2 - kanbanRect.left
-  const startY = reviewRect.top + 50 - kanbanRect.top
+  const startX = reviewRect.left + reviewRect.width / 2 - kanbanRect.left;
+  const startY = reviewRect.top + 50 - kanbanRect.top;
   // 弧线终点：执行列中间偏上（同一高度）
-  const endX = workingRect.left + workingRect.width / 2 - kanbanRect.left
+  const endX = workingRect.left + workingRect.width / 2 - kanbanRect.left;
 
-  const width = Math.abs(startX - endX) + 40
-  const height = 80
+  const width = Math.abs(startX - endX) + 40;
+  const height = 80;
 
-  const svgStartX = 20
-  const svgEndX = width - 20
-  const svgStartY = height - 10
-  const svgEndY = height - 10
-  const cpX = width / 2
-  const cpY = 10
+  const svgStartX = 20;
+  const svgEndX = width - 20;
+  const svgStartY = height - 10;
+  const svgEndY = height - 10;
+  const cpX = width / 2;
+  const cpY = 10;
 
-  arrowViewBox.value = `0 0 ${width} ${height}`
-  arrowPath.value = `M ${svgStartX} ${svgStartY} Q ${cpX} ${cpY} ${svgEndX} ${svgEndY}`
+  arrowViewBox.value = `0 0 ${width} ${height}`;
+  arrowPath.value = `M ${svgStartX} ${svgStartY} Q ${cpX} ${cpY} ${svgEndX} ${svgEndY}`;
 
   arrowStyle.value = {
     position: 'absolute',
@@ -82,31 +82,31 @@ function animateReworkArrow() {
     height: `${height}px`,
     pointerEvents: 'none',
     zIndex: '20',
-  }
+  };
 
-  showArrow.value = true
-  setTimeout(() => { showArrow.value = false }, 1500)
+  showArrow.value = true;
+  setTimeout(() => { showArrow.value = false; }, 1500);
 }
 
 // 监听 rework 事件
 watch(
   () => store.state.timeline.length,
   () => {
-    const latest = store.state.timeline[0]
-    if (!latest) return
+    const latest = store.state.timeline[0];
+    if (!latest) return;
     if (
       (latest.event.type === 'review' && latest.event.result === 'rejected') ||
       (latest.event.type === 'agent_status' && latest.event.status === 'reworking')
     ) {
-      nextTick(() => animateReworkArrow())
+      nextTick(() => animateReworkArrow());
     }
   }
-)
+);
 
 // 处理 resize
-function handleResize() { showArrow.value = false }
-onMounted(() => window.addEventListener('resize', handleResize))
-onUnmounted(() => window.removeEventListener('resize', handleResize))
+function handleResize() { showArrow.value = false; }
+onMounted(() => window.addEventListener('resize', handleResize));
+onUnmounted(() => window.removeEventListener('resize', handleResize));
 </script>
 
 <template>

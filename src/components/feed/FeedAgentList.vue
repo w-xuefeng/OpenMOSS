@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { AgentSummary } from '@/composables/useActivityFeed'
-import AgentCard from '@/components/feed/AgentCard.vue'
+import { computed } from 'vue';
+import type { AgentSummary } from '@/composables/useActivityFeed';
+import AgentCard from '@/components/feed/AgentCard.vue';
 
 const props = defineProps<{
     agents: AgentSummary[]
     flashingAgentIds: Set<string>
     selectedAgentId: string | null
-}>()
+}>();
 
 const emit = defineEmits<{
     (e: 'select', agentId: string | null): void
-}>()
+}>();
 
 function handleSelect(id: string) {
-    emit('select', props.selectedAgentId === id ? null : id)
+    emit('select', props.selectedAgentId === id ? null : id);
 }
 
-const sortedAgents = computed(() => props.agents)
+const sortedAgents = computed(() => props.agents);
 </script>
 
 <template>

@@ -1,8 +1,11 @@
-import { globalIgnores } from 'eslint/config'
-import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
-import pluginVue from 'eslint-plugin-vue'
-import pluginOxlint from 'eslint-plugin-oxlint'
-import skipFormatting from 'eslint-config-prettier/flat'
+import { globalIgnores } from 'eslint/config';
+import {
+  defineConfigWithVueTs,
+  vueTsConfigs,
+} from '@vue/eslint-config-typescript';
+import pluginVue from 'eslint-plugin-vue';
+import pluginOxlint from 'eslint-plugin-oxlint';
+import skipFormatting from 'eslint-config-prettier/flat';
 
 // To allow more languages other than `ts` in `.vue` files, uncomment the following lines:
 // import { configureVueProject } from '@vue/eslint-config-typescript'
@@ -14,21 +17,30 @@ export default defineConfigWithVueTs(
     name: 'app/files-to-lint',
     files: ['**/*.{vue,ts,mts,tsx}'],
   },
-
   globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
-
   ...pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
-
   ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
-
   skipFormatting,
-
   // shadcn-vue 组件多为单词命名（Avatar, Badge 等），关闭此规则
   {
+    languageOptions: {
+      globals: {
+        __VERSION__: 'readonly',
+      },
+    },
     rules: {
       'vue/multi-word-component-names': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
+      'quotes': ['warn', 'single', {
+        avoidEscape: true,
+        allowTemplateLiterals: false,
+      }],
+      'jsx-quotes': ['warn', 'prefer-single'],
+      'semi': ['error', 'always', {
+        'omitLastInOneLineBlock': false,
+        'omitLastInOneLineClassBody': false,
+      }],
     },
   },
-)
+);

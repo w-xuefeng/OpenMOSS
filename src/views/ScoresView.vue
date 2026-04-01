@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import { useDebounceFn } from '@vueuse/core'
+import { onMounted, ref, watch } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
 import {
     adminScoreApi,
     type AdminScoreSummary,
     type AdminScoreLeaderboardItem,
     type AdminScoreLogItem,
     type AdminPageResponse,
-} from '@/api/client'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
+} from '@/api/client';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import {
     Search,
     RefreshCw,
@@ -24,30 +24,30 @@ import {
     ArrowLeft,
     ArrowRight,
     Users,
-} from 'lucide-vue-next'
+} from 'lucide-vue-next';
 
 // ─── Tab ───
 
 type TabType = 'leaderboard' | 'logs'
-const activeTab = ref<TabType>('leaderboard')
+const activeTab = ref<TabType>('leaderboard');
 
 // ─── 状态 ───
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 20;
 
-const loading = ref(false)
-const summaryLoading = ref(false)
-const error = ref('')
+const loading = ref(false);
+const summaryLoading = ref(false);
+const error = ref('');
 
-const keyword = ref('')
-const roleFilter = ref('all')
-const signFilter = ref('all') // for logs: all, positive, negative
-const page = ref(1)
-let requestId = 0
+const keyword = ref('');
+const roleFilter = ref('all');
+const signFilter = ref('all'); // for logs: all, positive, negative
+const page = ref(1);
+let requestId = 0;
 
-const summary = ref<AdminScoreSummary | null>(null)
-const leaderboardData = ref<AdminPageResponse<AdminScoreLeaderboardItem>>(createEmptyPage())
-const logsData = ref<AdminPageResponse<AdminScoreLogItem>>(createEmptyPage())
+const summary = ref<AdminScoreSummary | null>(null);
+const leaderboardData = ref<AdminPageResponse<AdminScoreLeaderboardItem>>(createEmptyPage());
+const logsData = ref<AdminPageResponse<AdminScoreLogItem>>(createEmptyPage());
 
 // ─── 选项 ───
 
@@ -57,22 +57,22 @@ const roleOptions = [
     { value: 'executor', label: '执行者' },
     { value: 'reviewer', label: '审查者' },
     { value: 'patrol', label: '巡查者' },
-]
+];
 
 const signOptions = [
     { value: 'all', label: '全部' },
     { value: 'positive', label: '奖励' },
     { value: 'negative', label: '惩罚' },
-]
+];
 
 // ─── 工具函数 ───
 
 function createEmptyPage<T = unknown>(): AdminPageResponse<T> {
-    return { items: [] as T[], total: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, has_more: false }
+    return { items: [] as T[], total: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, has_more: false };
 }
 
 function formatRole(role: string) {
-    return ({ planner: '规划者', executor: '执行者', reviewer: '审查者', patrol: '巡查者' }[role] ?? role)
+    return ({ planner: '规划者', executor: '执行者', reviewer: '审查者', patrol: '巡查者' }[role] ?? role);
 }
 
 function getRoleBadgeClass(role: string) {
@@ -81,66 +81,66 @@ function getRoleBadgeClass(role: string) {
         executor: 'border-sky-200 bg-sky-50 text-sky-700',
         reviewer: 'border-amber-200 bg-amber-50 text-amber-700',
         patrol: 'border-teal-200 bg-teal-50 text-teal-700',
-    }[role] ?? 'border-border bg-muted text-muted-foreground')
+    }[role] ?? 'border-border bg-muted text-muted-foreground');
 }
 
 function formatDate(value: string | null) {
-    if (!value) return '—'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat('zh-CN', {
         month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
-    }).format(date)
+    }).format(date);
 }
 
 function rankEmoji(rank: number) {
-    if (rank === 1) return '🥇'
-    if (rank === 2) return '🥈'
-    if (rank === 3) return '🥉'
-    return `#${rank}`
+    if (rank === 1) return '🥇';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return `#${rank}`;
 }
 
 // ─── 数据加载 ───
 
 const reloadDebounced = useDebounceFn(() => {
-    page.value = 1
-    void loadData()
-}, 280)
+    page.value = 1;
+    void loadData();
+}, 280);
 
 watch([keyword, roleFilter, signFilter], () => {
-    loading.value = true
-    reloadDebounced()
-})
+    loading.value = true;
+    reloadDebounced();
+});
 
 watch(activeTab, () => {
-    keyword.value = ''
-    roleFilter.value = 'all'
-    signFilter.value = 'all'
-    page.value = 1
-    void loadData()
-})
+    keyword.value = '';
+    roleFilter.value = 'all';
+    signFilter.value = 'all';
+    page.value = 1;
+    void loadData();
+});
 
 onMounted(() => {
-    void loadSummary()
-    void loadData()
-})
+    void loadSummary();
+    void loadData();
+});
 
 async function loadSummary() {
-    summaryLoading.value = true
+    summaryLoading.value = true;
     try {
-        const response = await adminScoreApi.summary()
-        summary.value = response.data
+        const response = await adminScoreApi.summary();
+        summary.value = response.data;
     } catch (e) {
-        console.error('Failed to load score summary', e)
+        console.error('Failed to load score summary', e);
     } finally {
-        summaryLoading.value = false
+        summaryLoading.value = false;
     }
 }
 
 async function loadData() {
-    const rid = ++requestId
-    loading.value = true
-    error.value = ''
+    const rid = ++requestId;
+    loading.value = true;
+    error.value = '';
 
     try {
         if (activeTab.value === 'leaderboard') {
@@ -151,9 +151,9 @@ async function loadData() {
                 role: roleFilter.value === 'all' ? undefined : roleFilter.value,
                 sort_by: 'total_score',
                 sort_order: 'desc',
-            })
-            if (rid !== requestId) return
-            leaderboardData.value = response.data
+            });
+            if (rid !== requestId) return;
+            leaderboardData.value = response.data;
         } else {
             const response = await adminScoreApi.logs({
                 page: page.value,
@@ -161,34 +161,34 @@ async function loadData() {
                 keyword: keyword.value.trim() || undefined,
                 score_sign: signFilter.value === 'all' ? undefined : signFilter.value,
                 sort_order: 'desc',
-            })
-            if (rid !== requestId) return
-            logsData.value = response.data
+            });
+            if (rid !== requestId) return;
+            logsData.value = response.data;
         }
     } catch (e) {
-        if (rid !== requestId) return
-        console.error('Failed to load score data', e)
-        error.value = '数据加载失败，请重试。'
+        if (rid !== requestId) return;
+        console.error('Failed to load score data', e);
+        error.value = '数据加载失败，请重试。';
     } finally {
-        if (rid === requestId) loading.value = false
+        if (rid === requestId) loading.value = false;
     }
 }
 
 function goToPage(p: number) {
-    const data = activeTab.value === 'leaderboard' ? leaderboardData.value : logsData.value
-    if (p < 1 || p > data.total_pages || p === page.value) return
-    page.value = p
-    void loadData()
+    const data = activeTab.value === 'leaderboard' ? leaderboardData.value : logsData.value;
+    if (p < 1 || p > data.total_pages || p === page.value) return;
+    page.value = p;
+    void loadData();
 }
 
 function refreshAll() {
-    void loadSummary()
-    void loadData()
+    void loadSummary();
+    void loadData();
 }
 
 // 当前分页数据（供模板统一引用）
 function currentPageData() {
-    return activeTab.value === 'leaderboard' ? leaderboardData.value : logsData.value
+    return activeTab.value === 'leaderboard' ? leaderboardData.value : logsData.value;
 }
 </script>
 

@@ -1,44 +1,44 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { feedApi } from '@/api/client'
-import { translateLog } from '@/composables/useActivityFeed'
-import type { FeedLog, TranslatedActivity, AgentSummary } from '@/composables/useActivityFeed'
-import ActivityCard from '@/components/feed/ActivityCard.vue'
-import FeedAgentList from '@/components/feed/FeedAgentList.vue'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { feedApi } from '@/api/client';
+import { translateLog } from '@/composables/useActivityFeed';
+import type { FeedLog, TranslatedActivity, AgentSummary } from '@/composables/useActivityFeed';
+import ActivityCard from '@/components/feed/ActivityCard.vue';
+import FeedAgentList from '@/components/feed/FeedAgentList.vue';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import {
     Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
-} from '@/components/ui/sheet'
-import { ChevronLeft, ChevronRight, Inbox, Loader2, Lock, Pause, Play, RefreshCw, Users, X } from 'lucide-vue-next'
+} from '@/components/ui/sheet';
+import { ChevronLeft, ChevronRight, Inbox, Loader2, Lock, Pause, Play, RefreshCw, Users, X } from 'lucide-vue-next';
 
-const enabled = ref<boolean | null>(null)
-const loading = ref(true)
-const activities = ref<TranslatedActivity[]>([])
-const agentSummaries = ref<AgentSummary[]>([])
-const flashingAgentIds = ref<Set<string>>(new Set())
-const selectedAgentId = ref<string | null>(null)
-const paused = ref(false)
-const autoPaused = ref(false)
-const newIds = ref<Set<string>>(new Set())
-const mobileSheetOpen = ref(false)
-const sidebarCollapsed = ref(false)
-const timelineRef = ref<HTMLElement | null>(null)
-const feedListKey = ref(0)
+const enabled = ref<boolean | null>(null);
+const loading = ref(true);
+const activities = ref<TranslatedActivity[]>([]);
+const agentSummaries = ref<AgentSummary[]>([]);
+const flashingAgentIds = ref<Set<string>>(new Set());
+const selectedAgentId = ref<string | null>(null);
+const paused = ref(false);
+const autoPaused = ref(false);
+const newIds = ref<Set<string>>(new Set());
+const mobileSheetOpen = ref(false);
+const sidebarCollapsed = ref(false);
+const timelineRef = ref<HTMLElement | null>(null);
+const feedListKey = ref(0);
 
-let pollTimer: ReturnType<typeof setInterval> | null = null
-let autoTimer: ReturnType<typeof setTimeout> | null = null
-const AUTO_PAUSE_MS = 5 * 60 * 1000 // 5 分钟
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+let autoTimer: ReturnType<typeof setTimeout> | null = null;
+const AUTO_PAUSE_MS = 5 * 60 * 1000; // 5 分钟
 
 const filteredActivities = computed(() => {
-    if (!selectedAgentId.value) return activities.value
-    return activities.value.filter((a) => a.agentId === selectedAgentId.value)
-})
+    if (!selectedAgentId.value) return activities.value;
+    return activities.value.filter((a) => a.agentId === selectedAgentId.value);
+});
 
 const selectedAgentName = computed(() => {
-    if (!selectedAgentId.value) return null
-    return agentSummaries.value.find((a) => a.id === selectedAgentId.value)?.name ?? null
-})
+    if (!selectedAgentId.value) return null;
+    return agentSummaries.value.find((a) => a.id === selectedAgentId.value)?.name ?? null;
+});
 
 // ============================================================
 // 数据加载
@@ -46,105 +46,105 @@ const selectedAgentName = computed(() => {
 
 async function checkStatus() {
     try {
-        const res = await feedApi.status()
-        enabled.value = res.data.enabled
-    } catch { enabled.value = false }
+        const res = await feedApi.status();
+        enabled.value = res.data.enabled;
+    } catch { enabled.value = false; }
 }
 
 async function loadAgentSummaries() {
     try {
-        const res = await feedApi.agentSummary()
-        agentSummaries.value = res.data
+        const res = await feedApi.agentSummary();
+        agentSummaries.value = res.data;
     } catch { /* ignore */ }
 }
 
 async function loadLogs(incremental = false) {
     try {
-        const params: { after?: string; limit?: number } = { limit: 100 }
+        const params: { after?: string; limit?: number } = { limit: 100 };
         if (incremental && activities.value.length > 0) {
-            const ts = activities.value[0]?.timestamp
-            if (ts) params.after = ts
+            const ts = activities.value[0]?.timestamp;
+            if (ts) params.after = ts;
         }
 
-        const res = await feedApi.logs(params)
-        const newLogs: FeedLog[] = res.data
-        const translated = newLogs.map(translateLog)
+        const res = await feedApi.logs(params);
+        const newLogs: FeedLog[] = res.data;
+        const translated = newLogs.map(translateLog);
 
         if (incremental && translated.length > 0) {
-            const ids = new Set(translated.map((t) => t.id))
-            newIds.value = ids
-            setTimeout(() => { newIds.value = new Set() }, 3000)
+            const ids = new Set(translated.map((t) => t.id));
+            newIds.value = ids;
+            setTimeout(() => { newIds.value = new Set(); }, 3000);
 
-            activities.value = [...translated, ...activities.value].slice(0, 300)
+            activities.value = [...translated, ...activities.value].slice(0, 300);
 
-            const agentIds = new Set(translated.map((t) => t.agentId).filter(Boolean))
-            flashingAgentIds.value = agentIds
-            setTimeout(() => { flashingAgentIds.value = new Set() }, 2000)
+            const agentIds = new Set(translated.map((t) => t.agentId).filter(Boolean));
+            flashingAgentIds.value = agentIds;
+            setTimeout(() => { flashingAgentIds.value = new Set(); }, 2000);
 
             // 自动滚到顶部
-            await nextTick()
-            timelineRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
+            await nextTick();
+            timelineRef.value?.scrollTo({ top: 0, behavior: 'smooth' });
         } else if (!incremental) {
-            activities.value = translated
-            feedListKey.value++
+            activities.value = translated;
+            feedListKey.value++;
         }
     } catch { /* ignore */ }
 }
 
 async function init() {
-    loading.value = true
-    await checkStatus()
+    loading.value = true;
+    await checkStatus();
     if (enabled.value) {
-        await Promise.all([loadAgentSummaries(), loadLogs(false)])
+        await Promise.all([loadAgentSummaries(), loadLogs(false)]);
     }
-    loading.value = false
+    loading.value = false;
 }
 
 function startPolling() {
     pollTimer = setInterval(() => {
         if (!paused.value && !autoPaused.value && enabled.value) {
-            loadLogs(true)
-            loadAgentSummaries()
+            loadLogs(true);
+            loadAgentSummaries();
         }
-    }, 5000)
+    }, 5000);
 
     // 5 分钟后自动暂停，不做任何判断
     autoTimer = setTimeout(() => {
-        autoPaused.value = true
-    }, AUTO_PAUSE_MS)
+        autoPaused.value = true;
+    }, AUTO_PAUSE_MS);
 }
 
 function resumeFromAutoPause() {
-    autoPaused.value = false
-    paused.value = false
+    autoPaused.value = false;
+    paused.value = false;
     // 恢复后再给 5 分钟
-    if (autoTimer) clearTimeout(autoTimer)
+    if (autoTimer) clearTimeout(autoTimer);
     autoTimer = setTimeout(() => {
-        autoPaused.value = true
-    }, AUTO_PAUSE_MS)
+        autoPaused.value = true;
+    }, AUTO_PAUSE_MS);
 }
 
-const switchingAgent = ref(false)
+const switchingAgent = ref(false);
 
 function handleSelectAgent(agentId: string | null) {
     if (agentId === selectedAgentId.value) {
         // 取消选中 — 无需骨架屏
-        selectedAgentId.value = null
-        mobileSheetOpen.value = false
-        return
+        selectedAgentId.value = null;
+        mobileSheetOpen.value = false;
+        return;
     }
-    switchingAgent.value = true
-    selectedAgentId.value = agentId
-    mobileSheetOpen.value = false
-    feedListKey.value++
-    setTimeout(() => { switchingAgent.value = false }, 300)
+    switchingAgent.value = true;
+    selectedAgentId.value = agentId;
+    mobileSheetOpen.value = false;
+    feedListKey.value++;
+    setTimeout(() => { switchingAgent.value = false; }, 300);
 }
 
-onMounted(() => { init(); startPolling() })
+onMounted(() => { init(); startPolling(); });
 onUnmounted(() => {
-    if (pollTimer) clearInterval(pollTimer)
-    if (autoTimer) clearTimeout(autoTimer)
-})
+    if (pollTimer) clearInterval(pollTimer);
+    if (autoTimer) clearTimeout(autoTimer);
+});
 </script>
 
 <template>

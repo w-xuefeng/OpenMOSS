@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useSimulationStore } from '@/composables/demo/useSimulationStore'
-import confetti from 'canvas-confetti'
+import { ref, watch } from 'vue';
+import { useSimulationStore } from '@/composables/demo/useSimulationStore';
+import confetti from 'canvas-confetti';
 
-const store = useSimulationStore()
+const store = useSimulationStore();
 
 interface FloatItem {
   id: string
@@ -12,30 +12,30 @@ interface FloatItem {
   x: number
 }
 
-const floats = ref<FloatItem[]>([])
-let floatId = 0
+const floats = ref<FloatItem[]>([]);
+let floatId = 0;
 
 watch(
   () => store.state.timeline.length,
   () => {
-    const latest = store.state.timeline[0]
-    if (!latest) return
+    const latest = store.state.timeline[0];
+    if (!latest) return;
 
-    const e = latest.event
+    const e = latest.event;
 
     // 积分变化 → 飘字
     if (e.type === 'score_change' && e.delta !== undefined) {
-      const isPositive = e.delta > 0
+      const isPositive = e.delta > 0;
       const item: FloatItem = {
         id: `f-${++floatId}`,
         text: isPositive ? `+${e.delta} ↑` : `${e.delta} ↓`,
         color: isPositive ? '#4A7A5E' : '#A05252',
         x: 30 + Math.random() * 40, // 随机水平位置 (30%-70%)
-      }
-      floats.value.push(item)
+      };
+      floats.value.push(item);
       setTimeout(() => {
-        floats.value = floats.value.filter(f => f.id !== item.id)
-      }, 1800)
+        floats.value = floats.value.filter(f => f.id !== item.id);
+      }, 1800);
 
       // 通过时撒花
       if (isPositive && e.delta >= 5) {
@@ -46,7 +46,7 @@ watch(
           colors: ['#8B6F4E', '#4A7A5E', '#C09840', '#4A7FA5'],
           gravity: 0.8,
           scalar: 0.8,
-        })
+        });
       }
     }
 
@@ -59,10 +59,10 @@ watch(
         colors: ['#4A7A5E', '#8B6F4E', '#C09840'],
         gravity: 0.9,
         scalar: 0.7,
-      })
+      });
     }
   }
-)
+);
 </script>
 
 <template>

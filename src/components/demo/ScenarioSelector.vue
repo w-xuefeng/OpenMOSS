@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import type { ScenarioData } from '@/composables/demo/types'
-import { Newspaper, ShoppingCart, Code, Megaphone, ShieldAlert, Clapperboard, Globe } from 'lucide-vue-next'
-import { markRaw, type Component } from 'vue'
+import type { ScenarioData } from '@/composables/demo/types';
+import { Newspaper, ShoppingCart, Code, Megaphone, ShieldAlert, Clapperboard, Globe } from 'lucide-vue-next';
+import { markRaw, type Component } from 'vue';
 
-import contentCompany from '@/composables/demo/scenarios/content-company.json'
-import ecommerce from '@/composables/demo/scenarios/ecommerce.json'
-import devTeam from '@/composables/demo/scenarios/dev-team.json'
-import researchLab from '@/composables/demo/scenarios/research-lab.json'
-import chaos from '@/composables/demo/scenarios/chaos.json'
-import mcnStudio from '@/composables/demo/scenarios/mcn-studio.json'
-import crossBorder from '@/composables/demo/scenarios/cross-border.json'
+import contentCompany from '@/composables/demo/scenarios/content-company.json';
+import ecommerce from '@/composables/demo/scenarios/ecommerce.json';
+import devTeam from '@/composables/demo/scenarios/dev-team.json';
+import researchLab from '@/composables/demo/scenarios/research-lab.json';
+import chaos from '@/composables/demo/scenarios/chaos.json';
+import mcnStudio from '@/composables/demo/scenarios/mcn-studio.json';
+import crossBorder from '@/composables/demo/scenarios/cross-border.json';
 
-const contentGroup = [contentCompany, mcnStudio, researchLab] as unknown as ScenarioData[]
-const commerceGroup = [ecommerce, crossBorder] as unknown as ScenarioData[]
-const techGroup = [devTeam] as unknown as ScenarioData[]
-const systemGroup = [chaos] as unknown as ScenarioData[]
+const contentGroup = [contentCompany, mcnStudio, researchLab] as unknown as ScenarioData[];
+const commerceGroup = [ecommerce, crossBorder] as unknown as ScenarioData[];
+const techGroup = [devTeam] as unknown as ScenarioData[];
+const systemGroup = [chaos] as unknown as ScenarioData[];
 
 const iconMap: Record<string, Component> = {
   Newspaper: markRaw(Newspaper),
@@ -24,11 +24,11 @@ const iconMap: Record<string, Component> = {
   ShieldAlert: markRaw(ShieldAlert),
   Clapperboard: markRaw(Clapperboard),
   Globe: markRaw(Globe),
-}
+};
 
 const emit = defineEmits<{
   select: [scenario: ScenarioData]
-}>()
+}>();
 </script>
 
 <template>

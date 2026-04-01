@@ -1,72 +1,72 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { clipboardCopy } from '@/lib/clipboard'
-import { marked } from 'marked'
-import { promptsApi, adminRuleApi } from '@/api/client'
-import type { AgentPromptMeta, PromptTemplate } from '@/api/client'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ref, onMounted, computed } from 'vue';
+import { clipboardCopy } from '@/lib/clipboard';
+import { marked } from 'marked';
+import { promptsApi, adminRuleApi } from '@/api/client';
+import type { AgentPromptMeta, PromptTemplate } from '@/api/client';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Plus, Copy, Pencil, Trash2, FileText, Check, Loader2,
   ChevronLeft, Code, Eye, ChevronRight, Download,
   Compass, Zap, SearchCheck, ShieldCheck, Bot,
   Users, ScrollText, LayoutTemplate,
-} from 'lucide-vue-next'
+} from 'lucide-vue-next';
 
 // ── 状态 ────────────────────────────────────────────────
-const loading = ref(true)
-const agents = ref<AgentPromptMeta[]>([])
-const templates = ref<PromptTemplate[]>([])
+const loading = ref(true);
+const agents = ref<AgentPromptMeta[]>([]);
+const templates = ref<PromptTemplate[]>([]);
 
 // 视图模式
-const mode = ref<'list' | 'create' | 'edit' | 'preview' | 'template' | 'agent-view'>('list')
-const editSlug = ref('')
+const mode = ref<'list' | 'create' | 'edit' | 'preview' | 'template' | 'agent-view'>('list');
+const editSlug = ref('');
 const form = ref({
   slug: '',
   name: '',
   role: '',
   description: '',
-})
+});
 
 // 创建/编辑的两个文本域
-const promptContent = ref('')
-const onboardingContent = ref('')
-const isRoleLoading = ref(false)
+const promptContent = ref('');
+const onboardingContent = ref('');
+const isRoleLoading = ref(false);
 
 // 角色切换确认弹窗
-const showRoleConfirm = ref(false)
-const roleConfirmTarget = ref('')
-const roleConfirmPrevious = ref('')
+const showRoleConfirm = ref(false);
+const roleConfirmTarget = ref('');
+const roleConfirmPrevious = ref('');
 
 // 删除确认弹窗
-const showDeleteConfirm = ref(false)
-const deleteTarget = ref('')
+const showDeleteConfirm = ref(false);
+const deleteTarget = ref('');
 
 // 模板查看/编辑
-const templateForm = ref({ role: '', content: '', filename: '' })
-const templateEditing = ref(false)
+const templateForm = ref({ role: '', content: '', filename: '' });
+const templateEditing = ref(false);
 
 // 组合预览
-const composedPrompt = ref('')
-const copied = ref(false)
-const previewMode = ref<'rendered' | 'source'>('rendered')
+const composedPrompt = ref('');
+const copied = ref(false);
+const previewMode = ref<'rendered' | 'source'>('rendered');
 
 // 操作中
-const saving = ref(false)
-const deleting = ref('')
+const saving = ref(false);
+const deleting = ref('');
 
 // 消息
-const message = ref('')
-const messageType = ref<'success' | 'error'>('success')
+const message = ref('');
+const messageType = ref<'success' | 'error'>('success');
 
 function showMessage(text: string, type: 'success' | 'error' = 'success') {
-  message.value = text
-  messageType.value = type
-  setTimeout(() => { message.value = '' }, 3000)
+  message.value = text;
+  messageType.value = type;
+  setTimeout(() => { message.value = ''; }, 3000);
 }
 
 
@@ -79,93 +79,93 @@ interface RuleItem {
   updated_at?: string
 }
 
-const rules = ref<RuleItem[]>([])
-const rulesLoading = ref(false)
-const ruleSaving = ref(false)
-const ruleDeleting = ref('')
+const rules = ref<RuleItem[]>([]);
+const rulesLoading = ref(false);
+const ruleSaving = ref(false);
+const ruleDeleting = ref('');
 
 // 规则编辑器弹窗（统一用于新建和编辑）
-const showRuleEditor = ref(false)
-const ruleEditorId = ref<string | null>(null)  // null = 新建模式
-const ruleEditorContent = ref('')
-const ruleEditorPreviewMode = ref<'split' | 'edit' | 'preview'>('split')
+const showRuleEditor = ref(false);
+const ruleEditorId = ref<string | null>(null);  // null = 新建模式
+const ruleEditorContent = ref('');
+const ruleEditorPreviewMode = ref<'split' | 'edit' | 'preview'>('split');
 
 // 渲染规则编辑器的预览
 const renderedRulePreview = computed(() => {
-  if (!ruleEditorContent.value) return ''
-  return marked(ruleEditorContent.value) as string
-})
+  if (!ruleEditorContent.value) return '';
+  return marked(ruleEditorContent.value) as string;
+});
 
 // 删除规则确认弹窗
-const showRuleDeleteConfirm = ref(false)
-const ruleDeleteTarget = ref('')
+const showRuleDeleteConfirm = ref(false);
+const ruleDeleteTarget = ref('');
 
 async function loadRules() {
-  rulesLoading.value = true
+  rulesLoading.value = true;
   try {
-    const { data } = await adminRuleApi.list('global')
-    rules.value = data
+    const { data } = await adminRuleApi.list('global');
+    rules.value = data;
   } catch (e) {
-    console.error('加载规则失败', e)
+    console.error('加载规则失败', e);
   } finally {
-    rulesLoading.value = false
+    rulesLoading.value = false;
   }
 }
 
 function openRuleEditor(rule?: RuleItem) {
-  ruleEditorId.value = rule?.id ?? null
-  ruleEditorContent.value = rule?.content ?? ''
-  ruleEditorPreviewMode.value = 'split'
-  showRuleEditor.value = true
+  ruleEditorId.value = rule?.id ?? null;
+  ruleEditorContent.value = rule?.content ?? '';
+  ruleEditorPreviewMode.value = 'split';
+  showRuleEditor.value = true;
 }
 
 function closeRuleEditor() {
-  showRuleEditor.value = false
-  ruleEditorId.value = null
-  ruleEditorContent.value = ''
+  showRuleEditor.value = false;
+  ruleEditorId.value = null;
+  ruleEditorContent.value = '';
 }
 
 async function saveRuleEditor() {
-  if (!ruleEditorContent.value.trim()) return
-  ruleSaving.value = true
+  if (!ruleEditorContent.value.trim()) return;
+  ruleSaving.value = true;
   try {
     if (ruleEditorId.value) {
       // 编辑模式
-      await adminRuleApi.update(ruleEditorId.value, ruleEditorContent.value)
-      showMessage('规则已更新')
+      await adminRuleApi.update(ruleEditorId.value, ruleEditorContent.value);
+      showMessage('规则已更新');
     } else {
       // 新建模式
-      await adminRuleApi.create({ scope: 'global', content: ruleEditorContent.value })
-      showMessage('规则已创建')
+      await adminRuleApi.create({ scope: 'global', content: ruleEditorContent.value });
+      showMessage('规则已创建');
     }
-    closeRuleEditor()
-    await loadRules()
+    closeRuleEditor();
+    await loadRules();
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: string } } }
-    showMessage(err.response?.data?.detail || '保存失败', 'error')
+    const err = e as { response?: { data?: { detail?: string } } };
+    showMessage(err.response?.data?.detail || '保存失败', 'error');
   } finally {
-    ruleSaving.value = false
+    ruleSaving.value = false;
   }
 }
 
 function confirmRuleDelete(id: string) {
-  ruleDeleteTarget.value = id
-  showRuleDeleteConfirm.value = true
+  ruleDeleteTarget.value = id;
+  showRuleDeleteConfirm.value = true;
 }
 
 async function doRuleDelete() {
-  showRuleDeleteConfirm.value = false
-  const id = ruleDeleteTarget.value
-  ruleDeleting.value = id
+  showRuleDeleteConfirm.value = false;
+  const id = ruleDeleteTarget.value;
+  ruleDeleting.value = id;
   try {
-    await adminRuleApi.delete(id)
-    showMessage('规则已删除')
-    await loadRules()
+    await adminRuleApi.delete(id);
+    showMessage('规则已删除');
+    await loadRules();
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: string } } }
-    showMessage(err.response?.data?.detail || '删除失败', 'error')
+    const err = e as { response?: { data?: { detail?: string } } };
+    showMessage(err.response?.data?.detail || '删除失败', 'error');
   } finally {
-    ruleDeleting.value = ''
+    ruleDeleting.value = '';
   }
 }
 
@@ -175,17 +175,17 @@ const roleOptions = [
   { value: 'executor', label: '执行者 Executor' },
   { value: 'reviewer', label: '审查者 Reviewer' },
   { value: 'patrol', label: '巡查者 Patrol' },
-]
+];
 
 const roleLabel = (role: string) =>
-  roleOptions.find(r => r.value === role)?.label || role
+  roleOptions.find(r => r.value === role)?.label || role;
 
 const templateDescriptions: Record<string, string> = {
   'planner': '负责任务拆解与规划，将大目标分解为可执行的子任务',
   'executor': '负责具体执行任务，产出内容、代码或操作结果',
   'reviewer': '负责审核执行结果，确保产出质量达标',
   'patrol': '负责系统巡查和异常检测，维护运行稳定性',
-}
+};
 
 // 必需角色配置
 const requiredRoles = [
@@ -193,7 +193,7 @@ const requiredRoles = [
   { role: 'reviewer', label: '审查者 Reviewer', desc: '审核执行者产出，通过或打回返工', single: true },
   { role: 'patrol', label: '巡查者 Patrol', desc: '系统巡查、异常检测、维护稳定', single: true },
   { role: 'executor', label: '执行者 Executor', desc: '实际执行子任务，可创建多个不同专长的执行者', single: false },
-]
+];
 
 // 角色状态检查
 const roleStatus = computed(() => {
@@ -201,147 +201,147 @@ const roleStatus = computed(() => {
     ...r,
     count: agents.value.filter(a => a.role === r.role).length,
     done: agents.value.some(a => a.role === r.role),
-  }))
-})
+  }));
+});
 
-const hasMissingRoles = computed(() => roleStatus.value.some(r => !r.done))
+const hasMissingRoles = computed(() => roleStatus.value.some(r => !r.done));
 
 // 按角色分组，每组内按创建时间倒序
 const groupedAgents = computed(() => {
-  const groups: Record<string, AgentPromptMeta[]> = {}
+  const groups: Record<string, AgentPromptMeta[]> = {};
   for (const a of agents.value) {
-    const key = a.role || '未知'
-    if (!groups[key]) groups[key] = []
-    groups[key].push(a)
+    const key = a.role || '未知';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(a);
   }
   // 每组按 created_at 倒序
   for (const key of Object.keys(groups)) {
     groups[key]?.sort((a, b) => {
-      const ta = a.created_at || ''
-      const tb = b.created_at || ''
-      return tb.localeCompare(ta)
-    })
+      const ta = a.created_at || '';
+      const tb = b.created_at || '';
+      return tb.localeCompare(ta);
+    });
   }
-  return groups
-})
+  return groups;
+});
 
 // ── Markdown 渲染 ────────────────────────────────────────
 const renderedMarkdown = computed(() => {
-  if (!composedPrompt.value) return ''
-  return marked(composedPrompt.value) as string
-})
+  if (!composedPrompt.value) return '';
+  return marked(composedPrompt.value) as string;
+});
 
 const renderedTemplateContent = computed(() => {
-  if (!templateForm.value.content) return ''
-  return marked(templateForm.value.content) as string
-})
+  if (!templateForm.value.content) return '';
+  return marked(templateForm.value.content) as string;
+});
 
-const agentViewData = ref({ slug: '', name: '', role: '', description: '', content: '' })
+const agentViewData = ref({ slug: '', name: '', role: '', description: '', content: '' });
 const renderedAgentContent = computed(() => {
-  if (!agentViewData.value.content) return ''
-  return marked(agentViewData.value.content) as string
-})
+  if (!agentViewData.value.content) return '';
+  return marked(agentViewData.value.content) as string;
+});
 
 // 编辑器实时预览：提示词 + 对接指引合并
 const fullEditorContent = computed(() => {
-  const parts: string[] = []
-  if (promptContent.value.trim()) parts.push(promptContent.value.trim())
-  if (onboardingContent.value.trim()) parts.push(onboardingContent.value.trim())
-  return parts.join('\n\n---\n\n')
-})
+  const parts: string[] = [];
+  if (promptContent.value.trim()) parts.push(promptContent.value.trim());
+  if (onboardingContent.value.trim()) parts.push(onboardingContent.value.trim());
+  return parts.join('\n\n---\n\n');
+});
 
 const renderedEditorPreview = computed(() => {
-  if (!fullEditorContent.value) return ''
-  return marked(fullEditorContent.value) as string
-})
+  if (!fullEditorContent.value) return '';
+  return marked(fullEditorContent.value) as string;
+});
 
-const editorCopied = ref(false)
+const editorCopied = ref(false);
 
 // ── 数据加载 ─────────────────────────────────────────────
 async function loadData() {
-  loading.value = true
+  loading.value = true;
   try {
     const [agentsRes, templatesRes] = await Promise.all([
       promptsApi.listAgents(),
       promptsApi.listTemplates(),
-    ])
-    agents.value = agentsRes.data
-    templates.value = templatesRes.data
+    ]);
+    agents.value = agentsRes.data;
+    templates.value = templatesRes.data;
   } catch {
-    showMessage('加载失败', 'error')
+    showMessage('加载失败', 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 onMounted(() => {
-  loadData()
-  loadRules()
-})
+  loadData();
+  loadRules();
+});
 
 // ── 角色切换 → 自动加载模板和对接指引 ────────────────────
 async function loadRoleContent(role: string) {
-  isRoleLoading.value = true
+  isRoleLoading.value = true;
   try {
-    const templateRes = await promptsApi.getTemplate(role)
-    promptContent.value = templateRes.data.content
+    const templateRes = await promptsApi.getTemplate(role);
+    promptContent.value = templateRes.data.content;
   } catch {
-    promptContent.value = ''
+    promptContent.value = '';
   }
   try {
-    const onboardingRes = await promptsApi.getOnboarding(role)
-    onboardingContent.value = onboardingRes.data.content
+    const onboardingRes = await promptsApi.getOnboarding(role);
+    onboardingContent.value = onboardingRes.data.content;
   } catch {
-    onboardingContent.value = ''
+    onboardingContent.value = '';
   }
-  isRoleLoading.value = false
+  isRoleLoading.value = false;
 }
 
 function handleRoleChange(event: Event) {
-  const newRole = (event.target as HTMLSelectElement).value
-  if (!newRole) return
+  const newRole = (event.target as HTMLSelectElement).value;
+  if (!newRole) return;
 
   // 如果已有内容，弹出自定义确认框
   if (form.value.role && promptContent.value.trim()) {
-    roleConfirmPrevious.value = form.value.role
-    roleConfirmTarget.value = newRole
+    roleConfirmPrevious.value = form.value.role;
+    roleConfirmTarget.value = newRole;
     // 先恢复 select 的值（因为 v-model 已经改了）
-    form.value.role = roleConfirmPrevious.value
-    showRoleConfirm.value = true
-    return
+    form.value.role = roleConfirmPrevious.value;
+    showRoleConfirm.value = true;
+    return;
   }
 
-  form.value.role = newRole
-  loadRoleContent(newRole)
+  form.value.role = newRole;
+  loadRoleContent(newRole);
 }
 
 function confirmRoleSwitch() {
-  showRoleConfirm.value = false
-  form.value.role = roleConfirmTarget.value
-  loadRoleContent(roleConfirmTarget.value)
+  showRoleConfirm.value = false;
+  form.value.role = roleConfirmTarget.value;
+  loadRoleContent(roleConfirmTarget.value);
 }
 
 function cancelRoleSwitch() {
-  showRoleConfirm.value = false
+  showRoleConfirm.value = false;
 }
 
 // ── 新建 ────────────────────────────────────────────
 function startCreate(presetRole?: string) {
-  form.value = { slug: '', name: '', role: presetRole || '', description: '' }
-  promptContent.value = ''
-  onboardingContent.value = ''
-  mode.value = 'create'
+  form.value = { slug: '', name: '', role: presetRole || '', description: '' };
+  promptContent.value = '';
+  onboardingContent.value = '';
+  mode.value = 'create';
   if (presetRole) {
-    loadRoleContent(presetRole)
+    loadRoleContent(presetRole);
   }
 }
 
 async function handleCreate() {
   if (!form.value.slug || !form.value.name || !form.value.role || !promptContent.value) {
-    showMessage('请填写必填项', 'error')
-    return
+    showMessage('请填写必填项', 'error');
+    return;
   }
-  saving.value = true
+  saving.value = true;
   try {
     await promptsApi.createAgent({
       slug: form.value.slug,
@@ -349,15 +349,15 @@ async function handleCreate() {
       role: form.value.role,
       description: form.value.description,
       content: fullEditorContent.value,
-    })
-    showMessage('创建成功')
-    mode.value = 'list'
-    await loadData()
+    });
+    showMessage('创建成功');
+    mode.value = 'list';
+    await loadData();
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: string } } }
-    showMessage(err.response?.data?.detail || '创建失败', 'error')
+    const err = e as { response?: { data?: { detail?: string } } };
+    showMessage(err.response?.data?.detail || '创建失败', 'error');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
@@ -366,246 +366,246 @@ async function handleCreate() {
 
 async function startEdit(slug: string) {
   try {
-    const { data } = await promptsApi.getAgent(slug)
-    editSlug.value = slug
+    const { data } = await promptsApi.getAgent(slug);
+    editSlug.value = slug;
     form.value = {
       slug: data.slug,
       name: data.name,
       role: data.role,
       description: data.description,
-    }
+    };
 
     // 拆分内容：如果包含对接指引标记，分到两个文本域
-    const content = data.content
-    const markerIdx = content.indexOf(ONBOARDING_MARKER)
+    const content = data.content;
+    const markerIdx = content.indexOf(ONBOARDING_MARKER);
     if (markerIdx > 0) {
       // 找到标记前的分隔线 ---
-      let splitIdx = markerIdx
-      const before = content.substring(0, markerIdx)
-      const lastSep = before.lastIndexOf('---')
-      if (lastSep > 0) splitIdx = lastSep
+      let splitIdx = markerIdx;
+      const before = content.substring(0, markerIdx);
+      const lastSep = before.lastIndexOf('---');
+      if (lastSep > 0) splitIdx = lastSep;
 
-      promptContent.value = content.substring(0, splitIdx).trim()
-      onboardingContent.value = content.substring(markerIdx).trim()
+      promptContent.value = content.substring(0, splitIdx).trim();
+      onboardingContent.value = content.substring(markerIdx).trim();
     } else {
-      promptContent.value = content
+      promptContent.value = content;
       // 自动生成对接指引
       try {
-        const { data: ob } = await promptsApi.getOnboarding(data.role)
-        onboardingContent.value = ob.content
+        const { data: ob } = await promptsApi.getOnboarding(data.role);
+        onboardingContent.value = ob.content;
       } catch {
-        onboardingContent.value = ''
+        onboardingContent.value = '';
       }
     }
 
-    mode.value = 'edit'
+    mode.value = 'edit';
   } catch {
-    showMessage('加载失败', 'error')
+    showMessage('加载失败', 'error');
   }
 }
 
 async function handleUpdate() {
-  saving.value = true
+  saving.value = true;
   try {
     await promptsApi.updateAgent(editSlug.value, {
       name: form.value.name,
       role: form.value.role,
       description: form.value.description,
       content: fullEditorContent.value,
-    })
-    showMessage('保存成功')
-    mode.value = 'list'
-    await loadData()
+    });
+    showMessage('保存成功');
+    mode.value = 'list';
+    await loadData();
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: string } } }
-    showMessage(err.response?.data?.detail || '保存失败', 'error')
+    const err = e as { response?: { data?: { detail?: string } } };
+    showMessage(err.response?.data?.detail || '保存失败', 'error');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 // ── 删除 ────────────────────────────────────────────────
 
 async function handleDelete(slug: string, event: Event) {
-  event.stopPropagation()
-  deleteTarget.value = slug
-  showDeleteConfirm.value = true
+  event.stopPropagation();
+  deleteTarget.value = slug;
+  showDeleteConfirm.value = true;
 }
 
 async function confirmDelete() {
-  showDeleteConfirm.value = false
-  const slug = deleteTarget.value
-  deleting.value = slug
+  showDeleteConfirm.value = false;
+  const slug = deleteTarget.value;
+  deleting.value = slug;
   try {
-    await promptsApi.deleteAgent(slug)
-    showMessage('已删除')
-    await loadData()
+    await promptsApi.deleteAgent(slug);
+    showMessage('已删除');
+    await loadData();
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: string } } }
-    showMessage(err.response?.data?.detail || '删除失败', 'error')
+    const err = e as { response?: { data?: { detail?: string } } };
+    showMessage(err.response?.data?.detail || '删除失败', 'error');
   } finally {
-    deleting.value = ''
+    deleting.value = '';
   }
 }
 
 // ── 模板查看/编辑 ────────────────────────────────────────
 async function openTemplate(role: string) {
   try {
-    const { data } = await promptsApi.getTemplate(role)
-    templateForm.value = { role: data.role, content: data.content, filename: data.filename }
-    templateEditing.value = false
-    mode.value = 'template'
+    const { data } = await promptsApi.getTemplate(role);
+    templateForm.value = { role: data.role, content: data.content, filename: data.filename };
+    templateEditing.value = false;
+    mode.value = 'template';
   } catch {
-    showMessage('加载模板失败', 'error')
+    showMessage('加载模板失败', 'error');
   }
 }
 
 async function saveTemplate() {
-  saving.value = true
+  saving.value = true;
   try {
-    await promptsApi.updateTemplate(templateForm.value.role, templateForm.value.content)
-    showMessage('模板已保存')
-    templateEditing.value = false
-    await loadData()
+    await promptsApi.updateTemplate(templateForm.value.role, templateForm.value.content);
+    showMessage('模板已保存');
+    templateEditing.value = false;
+    await loadData();
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: string } } }
-    showMessage(err.response?.data?.detail || '保存失败', 'error')
+    const err = e as { response?: { data?: { detail?: string } } };
+    showMessage(err.response?.data?.detail || '保存失败', 'error');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 // ── Agent 查看 ───────────────────────────────────────────
 async function openAgentView(slug: string) {
   try {
-    const { data } = await promptsApi.getAgent(slug)
+    const { data } = await promptsApi.getAgent(slug);
     agentViewData.value = {
       slug: data.slug,
       name: data.name,
       role: data.role,
       description: data.description,
       content: data.content,
-    }
-    mode.value = 'agent-view'
+    };
+    mode.value = 'agent-view';
   } catch {
-    showMessage('加载失败', 'error')
+    showMessage('加载失败', 'error');
   }
 }
 
 // ── 一键复制 ─────────────────────────────────────────────
-const previewRole = ref('')
+const previewRole = ref('');
 
 const roleLabels: Record<string, string> = {
   planner: '规划者',
   executor: '执行者',
   reviewer: '审查者',
   patrol: '巡查者',
-}
+};
 
-const ONBOARDING_MARKER = '## 🔧 平台对接'
+const ONBOARDING_MARKER = '## 🔧 平台对接';
 
 // 从 composedPrompt 中提取对接指引部分
 const onboardingSection = computed(() => {
-  const idx = composedPrompt.value.indexOf(ONBOARDING_MARKER)
-  if (idx < 0) return ''
-  return composedPrompt.value.substring(idx).trim()
-})
+  const idx = composedPrompt.value.indexOf(ONBOARDING_MARKER);
+  if (idx < 0) return '';
+  return composedPrompt.value.substring(idx).trim();
+});
 
 // 生成 OpenClaw 快速复制前缀
 function buildQuickCopyPrefix(role: string): string {
-  const label = roleLabels[role] || role
+  const label = roleLabels[role] || role;
   return (
-    `🦞 **OpenClaw 快速对接** — 请按以下步骤完成配置：\n\n` +
+    '🦞 **OpenClaw 快速对接** — 请按以下步骤完成配置：\n\n' +
     `1. 将下方「角色提示词」**完整替换**到你的 **AGENTS.md**（角色：${label}）\n` +
-    `2. 根据新的 AGENTS.md 内容，自行更新你的 **SOUL.md**（提炼核心身份和行为准则）\n` +
-    `3. 按底部「平台对接」指引完成注册，获取 API Key\n` +
-    `4. 按指引下载并保存 Skill 工具包\n` +
-    `5. 完成后**删除**底部「平台对接」部分，只保留角色提示词\n\n` +
-    `---\n\n`
-  )
+    '2. 根据新的 AGENTS.md 内容，自行更新你的 **SOUL.md**（提炼核心身份和行为准则）\n' +
+    '3. 按底部「平台对接」指引完成注册，获取 API Key\n' +
+    '4. 按指引下载并保存 Skill 工具包\n' +
+    '5. 完成后**删除**底部「平台对接」部分，只保留角色提示词\n\n' +
+    '---\n\n'
+  );
 }
 
 async function showCompose(slug: string) {
-  composedPrompt.value = ''
-  copied.value = false
-  previewMode.value = 'rendered'
+  composedPrompt.value = '';
+  copied.value = false;
+  previewMode.value = 'rendered';
   // 查找 agent 的 role
-  const agent = agents.value.find(a => a.slug === slug)
-  previewRole.value = agent?.role || ''
+  const agent = agents.value.find(a => a.slug === slug);
+  previewRole.value = agent?.role || '';
   try {
-    const { data } = await promptsApi.compose(slug)
-    composedPrompt.value = data.prompt
-    editSlug.value = slug
-    mode.value = 'preview'
+    const { data } = await promptsApi.compose(slug);
+    composedPrompt.value = data.prompt;
+    editSlug.value = slug;
+    mode.value = 'preview';
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: string } } }
-    showMessage(err.response?.data?.detail || '生成失败', 'error')
+    const err = e as { response?: { data?: { detail?: string } } };
+    showMessage(err.response?.data?.detail || '生成失败', 'error');
   }
 }
 
 // 🦞 OpenClaw 快速复制（带前缀引导）
-const lobsterCopied = ref(false)
+const lobsterCopied = ref(false);
 async function copyWithPrefix() {
   try {
-    const text = buildQuickCopyPrefix(previewRole.value) + composedPrompt.value
-    await clipboardCopy(text)
-    lobsterCopied.value = true
-    showMessage('🦞 已复制（含对接引导）')
-    setTimeout(() => { lobsterCopied.value = false }, 2000)
+    const text = buildQuickCopyPrefix(previewRole.value) + composedPrompt.value;
+    await clipboardCopy(text);
+    lobsterCopied.value = true;
+    showMessage('🦞 已复制（含对接引导）');
+    setTimeout(() => { lobsterCopied.value = false; }, 2000);
   } catch {
-    showMessage('复制失败，请手动选中复制', 'error')
+    showMessage('复制失败，请手动选中复制', 'error');
   }
 }
 
 // 普通复制（仅提示词，去除对接引导）
 async function copyToClipboard() {
   try {
-    let text = composedPrompt.value
+    let text = composedPrompt.value;
     // 去除对接指引部分
-    const idx = text.indexOf(ONBOARDING_MARKER)
+    const idx = text.indexOf(ONBOARDING_MARKER);
     if (idx > 0) {
-      text = text.substring(0, idx).trim()
+      text = text.substring(0, idx).trim();
     }
-    await clipboardCopy(text)
-    copied.value = true
-    showMessage('已复制到剪贴板（仅提示词）')
-    setTimeout(() => { copied.value = false }, 2000)
+    await clipboardCopy(text);
+    copied.value = true;
+    showMessage('已复制到剪贴板（仅提示词）');
+    setTimeout(() => { copied.value = false; }, 2000);
   } catch {
-    showMessage('复制失败，请手动选中复制', 'error')
+    showMessage('复制失败，请手动选中复制', 'error');
   }
 }
 
 // 复制平台对接指引
-const onboardingCopied = ref(false)
+const onboardingCopied = ref(false);
 async function copyOnboarding() {
   if (!onboardingSection.value) {
-    showMessage('未找到对接指引内容', 'error')
-    return
+    showMessage('未找到对接指引内容', 'error');
+    return;
   }
   try {
-    await clipboardCopy(onboardingSection.value)
-    onboardingCopied.value = true
-    showMessage('已复制平台对接指引')
-    setTimeout(() => { onboardingCopied.value = false }, 2000)
+    await clipboardCopy(onboardingSection.value);
+    onboardingCopied.value = true;
+    showMessage('已复制平台对接指引');
+    setTimeout(() => { onboardingCopied.value = false; }, 2000);
   } catch {
-    showMessage('复制失败', 'error')
+    showMessage('复制失败', 'error');
   }
 }
 
 async function copyEditorContent() {
   try {
-    await clipboardCopy(fullEditorContent.value)
-    editorCopied.value = true
-    showMessage('已复制到剪贴板')
-    setTimeout(() => { editorCopied.value = false }, 2000)
+    await clipboardCopy(fullEditorContent.value);
+    editorCopied.value = true;
+    showMessage('已复制到剪贴板');
+    setTimeout(() => { editorCopied.value = false; }, 2000);
   } catch {
-    showMessage('复制失败', 'error')
+    showMessage('复制失败', 'error');
   }
 }
 
 
 function goBack() {
-  mode.value = 'list'
+  mode.value = 'list';
 }
 </script>
 

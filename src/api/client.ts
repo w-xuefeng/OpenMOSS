@@ -1,34 +1,34 @@
-import axios from 'axios'
-import { useAuthStore } from '@/stores/auth'
+import axios from 'axios';
+import { useAuthStore } from '@/stores/auth';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 10000,
-})
+});
 
 // 请求拦截器：自动附加 Admin Token
 api.interceptors.request.use((config) => {
-  const auth = useAuthStore()
+  const auth = useAuthStore();
   if (auth.token) {
-    config.headers['X-Admin-Token'] = auth.token
+    config.headers['X-Admin-Token'] = auth.token;
   }
-  return config
-})
+  return config;
+});
 
 // 响应拦截器：处理 403 自动跳转登录（排除登录接口本身）
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 403 && !error.config?.url?.includes('/admin/login')) {
-      const auth = useAuthStore()
-      auth.logout()
-      window.location.href = '/login'
+      const auth = useAuthStore();
+      auth.logout();
+      window.location.href = '/login';
     }
-    return Promise.reject(error)
+    return Promise.reject(error);
   },
-)
+);
 
-export default api
+export default api;
 
 export interface AdminPageResponse<T> {
   items: T[]
@@ -182,7 +182,7 @@ export interface AdminAgentListParams {
 export const adminApi = {
   login: (password: string) => api.post('/admin/login', { password }),
   resetKey: (agentId: string) => api.post(`/admin/agents/${agentId}/reset-key`),
-}
+};
 
 export const adminAgentApi = {
   list: (params?: AdminAgentListParams) =>
@@ -205,7 +205,7 @@ export const adminAgentApi = {
     api.get(`/admin/agents/${agentId}/related-counts`),
   deleteAgent: (agentId: string, confirmName: string) =>
     api.delete(`/admin/agents/${agentId}`, { data: { confirm_name: confirmName } }),
-}
+};
 
 export const adminTaskApi = {
   list: (params?: AdminTaskListParams) =>
@@ -216,7 +216,7 @@ export const adminTaskApi = {
   listSubTasks: (taskId: string, params?: AdminSubTaskListParams) =>
     api.get<AdminPageResponse<AdminSubTaskItem>>(`/admin/tasks/${taskId}/sub-tasks`, { params }),
   getSubTask: (subTaskId: string) => api.get<AdminSubTaskDetail>(`/admin/sub-tasks/${subTaskId}`),
-}
+};
 
 export const taskApi = {
   list: (params?: { page?: number; page_size?: number; status?: string }) =>
@@ -227,18 +227,18 @@ export const taskApi = {
     api.put(`/tasks/${id}`, data),
   updateStatus: (id: string, status: string) => api.put(`/tasks/${id}/status`, { status }),
   cancel: (id: string) => api.delete(`/tasks/${id}`),
-}
+};
 
 export const subTaskApi = {
   list: (params?: { task_id?: string; status?: string; page?: number; page_size?: number }) =>
     api.get('/sub-tasks', { params }),
   get: (id: string) => api.get(`/sub-tasks/${id}`),
-}
+};
 
 export const agentApi = {
   list: (params?: { role?: string }) => api.get('/agents', { params }),
   get: (id: string) => api.get(`/agents/${id}`),
-}
+};
 
 // ── 管理端仪表盘类型 ──
 
@@ -328,7 +328,7 @@ export const adminDashboardApi = {
     api.get<DashboardHighlights>('/admin/dashboard/highlights', { params }),
   trends: (params?: { days?: number }) =>
     api.get<DashboardTrends>('/admin/dashboard/trends', { params }),
-}
+};
 
 export interface TrendPoint { date: string; count: number }
 export interface ReviewTrendPoint { date: string; total: number; approved: number; rejected: number }
@@ -354,7 +354,7 @@ export const scoreApi = {
     api.get(`/scores/${agentId}/logs`, { params }),
   adjust: (data: { agent_id: string; score_delta: number; reason: string; sub_task_id?: string }) =>
     api.post('/scores/adjust', data),
-}
+};
 
 // ── 管理端积分类型 ──
 
@@ -423,13 +423,13 @@ export const adminScoreApi = {
     api.get<AdminPageResponse<AdminScoreLogItem>>('/admin/scores/logs', { params }),
   adjust: (data: { agent_id: string; score_delta: number; reason: string; sub_task_id?: string }) =>
     api.post('/admin/scores/adjust', data),
-}
+};
 
 export const reviewApi = {
   list: (params?: { sub_task_id?: string; page?: number; page_size?: number }) =>
     api.get('/review-records', { params }),
   get: (id: string) => api.get(`/review-records/${id}`),
-}
+};
 
 // ── 管理端审查记录类型 ──
 
@@ -476,12 +476,12 @@ export const adminReviewApi = {
     api.get<AdminPageResponse<AdminReviewListItem>>('/admin/review-records', { params }),
   get: (id: string) =>
     api.get<AdminReviewDetail>(`/admin/review-records/${id}`),
-}
+};
 
 export const logApi = {
   list: (params?: { sub_task_id?: string; action?: string; days?: number; limit?: number }) =>
     api.get('/logs', { params }),
-}
+};
 
 // ── 管理端活动日志类型 ──
 
@@ -511,11 +511,11 @@ export interface AdminLogParams {
 export const adminLogApi = {
   list: (params?: AdminLogParams) =>
     api.get<AdminPageResponse<AdminActivityLogItem>>('/admin/logs', { params }),
-}
+};
 
 export const ruleApi = {
   list: (params?: { task_id?: string; sub_task_id?: string }) => api.get('/rules', { params }),
-}
+};
 
 export const adminRuleApi = {
   list: (scope?: string) => api.get('/rules/list', { params: scope ? { scope } : undefined }),
@@ -523,7 +523,7 @@ export const adminRuleApi = {
     api.post('/rules', data),
   update: (id: string, content: string) => api.put(`/rules/${id}`, { content }),
   delete: (id: string) => api.delete(`/rules/${id}`),
-}
+};
 
 export const feedApi = {
   status: () => api.get('/feed/status'),
@@ -531,7 +531,7 @@ export const feedApi = {
     api.get('/feed/logs', { params }),
   agents: () => api.get('/feed/agents'),
   agentSummary: () => api.get('/feed/agent-summary'),
-}
+};
 
 export const setupApi = {
   status: () => api.get<{ initialized: boolean; has_external_url: boolean }>('/setup/status'),
@@ -549,7 +549,7 @@ export const setupApi = {
       events: string[]
     }
   }) => api.post('/setup/initialize', data),
-}
+};
 
 export const adminConfigApi = {
   get: () => api.get('/admin/config'),
@@ -559,7 +559,7 @@ export const adminConfigApi = {
       old_password: oldPassword,
       new_password: newPassword,
     }),
-}
+};
 
 // ── 提示词管理 ──────────────────────────────────────────
 
@@ -615,4 +615,24 @@ export const promptsApi = {
 
   // 平台对接指引
   getOnboarding: (role: string) => api.get<{ role: string; content: string }>(`/admin/prompts/onboarding/${role}`),
+};
+
+// ── WebUI 版本管理 ──────────────────────────────────────────
+
+export interface WebUIVersionInfo {
+  current_version: string | null
+  latest_version: string | null
+  update_available: boolean
+  update_type: 'none' | 'upgrade' | 'rollback'
+  checked_at: string | null
+  error: string | null
 }
+
+export const webuiApi = {
+  /** 获取版本信息（触发后台检查，带 30 分钟 cooldown） */
+  version: () => api.get<WebUIVersionInfo>('/webui/version'),
+  /** 强制检查更新（跳过 cooldown，管理员专用） */
+  checkUpdate: () => api.get<WebUIVersionInfo>('/webui/version/check'),
+  /** 触发更新/回滚（管理员专用） */
+  update: () => api.post<{ success: boolean; message: string; version: string }>('/admin/webui/update'),
+};

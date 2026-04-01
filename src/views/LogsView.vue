@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
-import { useDebounceFn } from '@vueuse/core'
+import { onMounted, reactive, ref, watch } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
 import {
     adminAgentApi,
     adminLogApi,
     type AdminActivityLogItem,
     type AdminAgentItem,
     type AdminPageResponse,
-} from '@/api/client'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+} from '@/api/client';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     Search,
     RefreshCw,
@@ -21,25 +21,25 @@ import {
     ArrowRight,
     ChevronDown,
     ChevronUp,
-} from 'lucide-vue-next'
+} from 'lucide-vue-next';
 
 // ─── 状态 ───
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 20;
 
-const keyword = ref('')
-const actionFilter = ref('all')
-const agentFilter = ref('all')
-const page = ref(1)
+const keyword = ref('');
+const actionFilter = ref('all');
+const agentFilter = ref('all');
+const page = ref(1);
 
-const loading = ref(false)
-const error = ref('')
-let requestId = 0
+const loading = ref(false);
+const error = ref('');
+let requestId = 0;
 
-const pageData = ref<AdminPageResponse<AdminActivityLogItem>>(createEmptyPage())
-const agentList = ref<AdminAgentItem[]>([])
+const pageData = ref<AdminPageResponse<AdminActivityLogItem>>(createEmptyPage());
+const agentList = ref<AdminAgentItem[]>([]);
 
-const expandedIds = reactive(new Set<string>())
+const expandedIds = reactive(new Set<string>());
 
 // ─── 选项 ───
 
@@ -52,19 +52,19 @@ const actionOptions = [
     { value: 'patrol', label: '巡查' },
     { value: 'reflection', label: '自省' },
     { value: 'blocked', label: '阻塞' },
-]
+];
 
 // ─── 工具函数 ───
 
 function createEmptyPage<T = unknown>(): AdminPageResponse<T> {
-    return { items: [] as T[], total: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, has_more: false }
+    return { items: [] as T[], total: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, has_more: false };
 }
 
 function formatAction(action: string) {
     return ({
         plan: '规划', coding: '执行', delivery: '交付', review: '审查',
         patrol: '巡查', reflection: '自省', blocked: '阻塞',
-    } as Record<string, string>)[action] ?? action
+    } as Record<string, string>)[action] ?? action;
 }
 
 function getActionBadgeClass(action: string) {
@@ -76,7 +76,7 @@ function getActionBadgeClass(action: string) {
         patrol: 'border-teal-200 bg-teal-50 text-teal-700',
         reflection: 'border-indigo-200 bg-indigo-50 text-indigo-700',
         blocked: 'border-rose-200 bg-rose-50 text-rose-700',
-    } as Record<string, string>)[action] ?? 'border-border bg-muted text-muted-foreground'
+    } as Record<string, string>)[action] ?? 'border-border bg-muted text-muted-foreground';
 }
 
 function getActionDotClass(action: string) {
@@ -88,11 +88,11 @@ function getActionDotClass(action: string) {
         patrol: 'bg-teal-500',
         reflection: 'bg-indigo-500',
         blocked: 'bg-rose-500',
-    } as Record<string, string>)[action] ?? 'bg-muted-foreground'
+    } as Record<string, string>)[action] ?? 'bg-muted-foreground';
 }
 
 function formatRole(role: string) {
-    return ({ planner: '规划者', executor: '执行者', reviewer: '审查者', patrol: '巡查者' }[role] ?? role)
+    return ({ planner: '规划者', executor: '执行者', reviewer: '审查者', patrol: '巡查者' }[role] ?? role);
 }
 
 function getRoleBadgeClass(role: string) {
@@ -101,72 +101,72 @@ function getRoleBadgeClass(role: string) {
         executor: 'border-sky-200 bg-sky-50 text-sky-700',
         reviewer: 'border-amber-200 bg-amber-50 text-amber-700',
         patrol: 'border-teal-200 bg-teal-50 text-teal-700',
-    }[role] ?? 'border-border bg-muted text-muted-foreground')
+    }[role] ?? 'border-border bg-muted text-muted-foreground');
 }
 
 function formatDate(value: string | null) {
-    if (!value) return '—'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat('zh-CN', {
         month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
-    }).format(date)
+    }).format(date);
 }
 
 function formatRelativeTime(value: string | null) {
-    if (!value) return ''
-    const now = Date.now()
-    const time = new Date(value).getTime()
-    if (Number.isNaN(time)) return ''
-    const diff = Math.floor((now - time) / 1000)
-    if (diff < 60) return '刚刚'
-    if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`
-    if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`
-    return `${Math.floor(diff / 86400)} 天前`
+    if (!value) return '';
+    const now = Date.now();
+    const time = new Date(value).getTime();
+    if (Number.isNaN(time)) return '';
+    const diff = Math.floor((now - time) / 1000);
+    if (diff < 60) return '刚刚';
+    if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
+    return `${Math.floor(diff / 86400)} 天前`;
 }
 
 function toggleExpand(id: string) {
     if (expandedIds.has(id)) {
-        expandedIds.delete(id)
+        expandedIds.delete(id);
     } else {
-        expandedIds.add(id)
+        expandedIds.add(id);
     }
 }
 
 function isSummaryLong(summary: string) {
-    return summary.length > 80
+    return summary.length > 80;
 }
 
 // ─── 数据加载 ───
 
 const reloadDebounced = useDebounceFn(() => {
-    page.value = 1
-    void loadData()
-}, 280)
+    page.value = 1;
+    void loadData();
+}, 280);
 
 watch([keyword, actionFilter, agentFilter], () => {
-    loading.value = true
-    reloadDebounced()
-})
+    loading.value = true;
+    reloadDebounced();
+});
 
 onMounted(() => {
-    void loadAgentList()
-    void loadData()
-})
+    void loadAgentList();
+    void loadData();
+});
 
 async function loadAgentList() {
     try {
-        const response = await adminAgentApi.list({ page: 1, page_size: 100 })
-        agentList.value = response.data.items
+        const response = await adminAgentApi.list({ page: 1, page_size: 100 });
+        agentList.value = response.data.items;
     } catch (e) {
-        console.error('Failed to load agent list', e)
+        console.error('Failed to load agent list', e);
     }
 }
 
 async function loadData() {
-    const rid = ++requestId
-    loading.value = true
-    error.value = ''
+    const rid = ++requestId;
+    loading.value = true;
+    error.value = '';
 
     try {
         const response = await adminLogApi.list({
@@ -176,23 +176,23 @@ async function loadData() {
             action: actionFilter.value === 'all' ? undefined : actionFilter.value,
             agent_id: agentFilter.value === 'all' ? undefined : agentFilter.value,
             sort_order: 'desc',
-        })
-        if (rid !== requestId) return
-        pageData.value = response.data
-        expandedIds.clear()
+        });
+        if (rid !== requestId) return;
+        pageData.value = response.data;
+        expandedIds.clear();
     } catch (e) {
-        if (rid !== requestId) return
-        console.error('Failed to load activity logs', e)
-        error.value = '数据加载失败，请重试。'
+        if (rid !== requestId) return;
+        console.error('Failed to load activity logs', e);
+        error.value = '数据加载失败，请重试。';
     } finally {
-        if (rid === requestId) loading.value = false
+        if (rid === requestId) loading.value = false;
     }
 }
 
 function goToPage(p: number) {
-    if (p < 1 || p > pageData.value.total_pages || p === page.value) return
-    page.value = p
-    void loadData()
+    if (p < 1 || p > pageData.value.total_pages || p === page.value) return;
+    page.value = p;
+    void loadData();
 }
 </script>
 

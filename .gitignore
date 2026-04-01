@@ -1,38 +1,33 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Dependencies
+node_modules/
 
-node_modules
-.DS_Store
-dist-ssr
-coverage
-*.local
+# Build output
+dist/
 
-# Editor directories and files
+# IDE
 .vscode/*
 !.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.idea/
 
-*.tsbuildinfo
+# OS
+.DS_Store
+Thumbs.db
 
+# Env
+.env.local
+.env.*.local
+
+# Lint cache
 .eslintcache
 
-# Cypress
-/cypress/videos/
-/cypress/screenshots/
+# Logs
+*.log
 
-# Vitest
-__screenshots__/
-
-# Vite
-*.timestamp-*-*.mjs
+# backend
+logs/
+app/
+data/
+static/
+config.yaml
+.openmoss.pid
+.venv

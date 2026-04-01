@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useSimulationStore } from '@/composables/demo/useSimulationStore'
-import { ROLE_COLORS } from '@/composables/demo/types'
+import { useSimulationStore } from '@/composables/demo/useSimulationStore';
+import { ROLE_COLORS } from '@/composables/demo/types';
 
-const store = useSimulationStore()
+const store = useSimulationStore();
 
 const statusLabels: Record<string, string> = {
   idle: '空闲',
@@ -12,7 +12,7 @@ const statusLabels: Record<string, string> = {
   reworking: '返工中',
   patrolling: '巡逻中',
   done: '完成',
-}
+};
 </script>
 
 <template>

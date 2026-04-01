@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { Star, Play } from 'lucide-vue-next'
+import { Star, Play } from 'lucide-vue-next';
 
 defineProps<{
   showCta?: boolean
-}>()
+}>();
 
 const emit = defineEmits<{
   startDemo: []
-}>()
+}>();
 
 function scrollToBento() {
-  const el = document.querySelector('.bento-section')
-  if (el) el.scrollIntoView({ behavior: 'smooth' })
+  const el = document.querySelector('.bento-section');
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
 }
 </script>
 

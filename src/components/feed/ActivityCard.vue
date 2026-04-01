@@ -1,41 +1,41 @@
 <script setup lang="ts">
-import { ref, computed, type Component } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import type { TranslatedActivity } from '@/composables/useActivityFeed'
+import { ref, computed, type Component } from 'vue';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import type { TranslatedActivity } from '@/composables/useActivityFeed';
 import {
     Activity, Award, Bell, BookOpen, ChevronDown, ChevronRight, ClipboardList,
     Eye, FileSearch, FilePlus, FileText, FolderPlus, Hand,
     ListPlus, Medal, MessageSquare, PackageCheck, Pencil, Play,
     ScrollText, Search, Trophy, UserPlus,
-} from 'lucide-vue-next'
+} from 'lucide-vue-next';
 
 const props = defineProps<{
     activity: TranslatedActivity
     isNew?: boolean
-}>()
+}>();
 
-const expanded = ref(false)
-const showRaw = ref(false)
+const expanded = ref(false);
+const showRaw = ref(false);
 
 const roleMap: Record<string, string> = {
     planner: '规划者',
     executor: '执行者',
     reviewer: '审查者',
     patrol: '巡查者',
-}
+};
 
-const roleName = computed(() => roleMap[props.activity.agentRole] || props.activity.agentRole)
+const roleName = computed(() => roleMap[props.activity.agentRole] || props.activity.agentRole);
 
-const hasDetails = computed(() => Object.keys(props.activity.details).length > 0)
-const hasBody = computed(() => !!props.activity.rawBody)
+const hasDetails = computed(() => Object.keys(props.activity.details).length > 0);
+const hasBody = computed(() => !!props.activity.rawBody);
 
 const iconMap: Record<string, Component> = {
     Activity, Award, Bell, BookOpen, ClipboardList,
     Eye, FileSearch, FilePlus, FileText, FolderPlus, Hand,
     ListPlus, Medal, MessageSquare, PackageCheck, Pencil, Play,
     ScrollText, Search, Trophy, UserPlus,
-}
+};
 
 const detailLabels: Record<string, string> = {
     comment: '评语', result: '结果', summary: '摘要',
@@ -43,19 +43,19 @@ const detailLabels: Record<string, string> = {
     status: '状态', priority: '优先级', type: '类型',
     task_id: '任务', sub_task_id: '子任务', agent_id: 'Agent',
     assigned_agent: '执行者', action: '动作',
-}
+};
 
 function highlightJson(): string {
-    if (!props.activity.rawBody) return ''
-    let text: string
-    try { text = JSON.stringify(JSON.parse(props.activity.rawBody), null, 2) }
-    catch { return props.activity.rawBody }
+    if (!props.activity.rawBody) return '';
+    let text: string;
+    try { text = JSON.stringify(JSON.parse(props.activity.rawBody), null, 2); }
+    catch { return props.activity.rawBody; }
 
     // escape HTML then colorise tokens
     text = text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
+        .replace(/>/g, '&gt;');
 
     return text.replace(
         /("(?:[^"\\]|\\.)*")\s*:/g,  // keys
@@ -69,7 +69,7 @@ function highlightJson(): string {
     ).replace(
         /:\s*(true|false|null)/g,       // booleans / null
         ': <span class="json-bool">$1</span>'
-    )
+    );
 }
 </script>
 

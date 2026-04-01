@@ -1,0 +1,65 @@
+name: Release WebUI
+
+on:
+  push:
+    tags:
+      - 'webui-v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout webui branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build-only
+
+      - name: Generate manifest
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/webui-v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "{\"version\":\"$VERSION\",\"buildTime\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > dist/webui-manifest.json
+          echo "📦 WebUI v$VERSION built at $(date -u)"
+
+      - name: Package
+        run: |
+          cd dist
+          tar -czf ../webui-dist.tar.gz .
+          cd ..
+          cp dist/webui-manifest.json .
+          echo "📁 Package contents:"
+          tar -tzf webui-dist.tar.gz | head -20
+          echo "📊 Package size: $(du -sh webui-dist.tar.gz | cut -f1)"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "WebUI v${{ env.VERSION }}"
+          body: |
+            ## WebUI v${{ env.VERSION }}
+
+            ### 安装方式
+            OpenMOSS 后端会自动检测并下载最新版本的 WebUI。
+
+            如需手动安装，请下载 `webui-dist.tar.gz` 并解压到 OpenMOSS 的 `static/` 目录。
+
+            ```bash
+            # 手动安装
+            cd /path/to/openmoss
+            curl -fsSL https://github.com/${{ github.repository }}/releases/latest/download/webui-dist.tar.gz | tar xzf - -C static/
+            ```
+          files: |
+            webui-dist.tar.gz
+            webui-manifest.json

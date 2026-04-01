@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { clipboardCopy } from '@/lib/clipboard'
-import { useDebounceFn } from '@vueuse/core'
+import { computed, onMounted, ref, watch } from 'vue';
+import { clipboardCopy } from '@/lib/clipboard';
+import { useDebounceFn } from '@vueuse/core';
 import {
     adminAgentApi,
     adminApi,
     type AdminAgentItem,
     type AdminAgentDetail,
     type AdminPageResponse,
-} from '@/api/client'
-import { toast } from 'vue-sonner'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
-import { TooltipProvider } from '@/components/ui/tooltip'
-import TextOverflowTooltip from '@/components/common/TextOverflowTooltip.vue'
+} from '@/api/client';
+import { toast } from 'vue-sonner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import TextOverflowTooltip from '@/components/common/TextOverflowTooltip.vue';
 import {
     Search,
     RefreshCw,
@@ -33,31 +33,31 @@ import {
     ChevronLeft,
     ToggleLeft,
     ToggleRight,
-} from 'lucide-vue-next'
+} from 'lucide-vue-next';
 
 // ─── 状态 ───
 
-const PAGE_SIZE = 20
-const mode = ref<'list' | 'detail'>('list')
+const PAGE_SIZE = 20;
+const mode = ref<'list' | 'detail'>('list');
 
-const keyword = ref('')
-const roleFilter = ref('all')
-const page = ref(1)
+const keyword = ref('');
+const roleFilter = ref('all');
+const page = ref(1);
 
-const loading = ref(false)
-const loadingDetail = ref(false)
-const listError = ref('')
-const detailError = ref('')
+const loading = ref(false);
+const loadingDetail = ref(false);
+const listError = ref('');
+const detailError = ref('');
 
-const selectedAgentId = ref<string | null>(null)
-const selectedAgent = ref<AdminAgentDetail | null>(null)
+const selectedAgentId = ref<string | null>(null);
+const selectedAgent = ref<AdminAgentDetail | null>(null);
 
 const pageData =
-    ref<AdminPageResponse<AdminAgentItem>>(createEmptyPage<AdminAgentItem>())
+    ref<AdminPageResponse<AdminAgentItem>>(createEmptyPage<AdminAgentItem>());
 
-let listRequestId = 0
-let detailRequestId = 0
-const detailKey = ref(0)
+let listRequestId = 0;
+let detailRequestId = 0;
+const detailKey = ref(0);
 
 // ─── 选项 ───
 
@@ -67,16 +67,16 @@ const roleOptions = [
     { value: 'executor', label: '执行者' },
     { value: 'reviewer', label: '审查者' },
     { value: 'patrol', label: '巡查者' },
-]
+];
 
 // ─── 工具函数 ───
 
 function createEmptyPage<T>(): AdminPageResponse<T> {
-    return { items: [], total: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, has_more: false }
+    return { items: [], total: 0, page: 1, page_size: PAGE_SIZE, total_pages: 1, has_more: false };
 }
 
 function formatRole(role: string) {
-    return ({ planner: '规划者', executor: '执行者', reviewer: '审查者', patrol: '巡查者' }[role] ?? role)
+    return ({ planner: '规划者', executor: '执行者', reviewer: '审查者', patrol: '巡查者' }[role] ?? role);
 }
 
 function getRoleBadgeClass(role: string) {
@@ -85,7 +85,7 @@ function getRoleBadgeClass(role: string) {
         executor: 'border-sky-200 bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800',
         reviewer: 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800',
         patrol: 'border-teal-200 bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800',
-    }[role] ?? 'border-border bg-muted text-muted-foreground')
+    }[role] ?? 'border-border bg-muted text-muted-foreground');
 }
 
 function getRoleBarClass(role: string) {
@@ -94,64 +94,64 @@ function getRoleBarClass(role: string) {
         executor: 'bg-sky-400 dark:bg-sky-500',
         reviewer: 'bg-amber-400 dark:bg-amber-500',
         patrol: 'bg-teal-400 dark:bg-teal-500',
-    }[role] ?? 'bg-muted-foreground/30')
+    }[role] ?? 'bg-muted-foreground/30');
 }
 
 function formatStatus(status: string) {
-    return ({ active: '工作中', disabled: '已禁用' }[status] ?? status)
+    return ({ active: '工作中', disabled: '已禁用' }[status] ?? status);
 }
 
 function getStatusDotClass(status: string) {
     return ({
         active: 'bg-emerald-500',
         disabled: 'bg-gray-400',
-    }[status] ?? 'bg-slate-400')
+    }[status] ?? 'bg-slate-400');
 }
 
 function formatDate(value: string | null) {
-    if (!value) return '未记录'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '未记录'
+    if (!value) return '未记录';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '未记录';
     return new Intl.DateTimeFormat('zh-CN', {
         month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
-    }).format(date)
+    }).format(date);
 }
 
 function formatRelativeTime(value: string | null) {
-    if (!value) return '从未'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '从未'
-    const now = Date.now()
-    const diff = now - date.getTime()
-    const mins = Math.floor(diff / 60000)
-    if (mins < 1) return '刚刚'
-    if (mins < 60) return `${mins} 分钟前`
-    const hours = Math.floor(mins / 60)
-    if (hours < 24) return `${hours} 小时前`
-    const days = Math.floor(hours / 24)
-    return `${days} 天前`
+    if (!value) return '从未';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '从未';
+    const now = Date.now();
+    const diff = now - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return '刚刚';
+    if (mins < 60) return `${mins} 分钟前`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} 小时前`;
+    const days = Math.floor(hours / 24);
+    return `${days} 天前`;
 }
 
 // ─── 数据加载 ───
 
 const reloadDebounced = useDebounceFn(() => {
-    page.value = 1
-    void loadAgents()
-}, 280)
+    page.value = 1;
+    void loadAgents();
+}, 280);
 
 watch([keyword, roleFilter], () => {
-    loading.value = true
-    reloadDebounced()
-})
+    loading.value = true;
+    reloadDebounced();
+});
 
 onMounted(() => {
-    void loadAgents()
-})
+    void loadAgents();
+});
 
 async function loadAgents() {
-    const requestId = ++listRequestId
-    loading.value = true
-    listError.value = ''
+    const requestId = ++listRequestId;
+    loading.value = true;
+    listError.value = '';
 
     try {
         const response = await adminAgentApi.list({
@@ -161,244 +161,244 @@ async function loadAgents() {
             role: roleFilter.value === 'all' ? undefined : roleFilter.value,
             sort_by: 'created_at',
             sort_order: 'desc',
-        })
+        });
 
-        if (requestId !== listRequestId) return
-        pageData.value = response.data
+        if (requestId !== listRequestId) return;
+        pageData.value = response.data;
     } catch (error) {
-        if (requestId !== listRequestId) return
-        console.error('Failed to load agents', error)
-        listError.value = 'Agent 列表加载失败，请稍后再试。'
-        pageData.value = createEmptyPage<AdminAgentItem>()
+        if (requestId !== listRequestId) return;
+        console.error('Failed to load agents', error);
+        listError.value = 'Agent 列表加载失败，请稍后再试。';
+        pageData.value = createEmptyPage<AdminAgentItem>();
     } finally {
-        if (requestId === listRequestId) loading.value = false
+        if (requestId === listRequestId) loading.value = false;
     }
 }
 
 async function loadAgentDetail(agentId: string) {
-    const requestId = ++detailRequestId
-    loadingDetail.value = true
-    detailError.value = ''
+    const requestId = ++detailRequestId;
+    loadingDetail.value = true;
+    detailError.value = '';
 
     try {
-        const response = await adminAgentApi.get(agentId)
-        if (requestId !== detailRequestId || selectedAgentId.value !== agentId) return
-        selectedAgent.value = response.data
-        detailKey.value++
+        const response = await adminAgentApi.get(agentId);
+        if (requestId !== detailRequestId || selectedAgentId.value !== agentId) return;
+        selectedAgent.value = response.data;
+        detailKey.value++;
     } catch (error) {
-        if (requestId !== detailRequestId) return
-        console.error('Failed to load agent detail', error)
-        detailError.value = 'Agent 详情加载失败，请重试。'
-        selectedAgent.value = null
+        if (requestId !== detailRequestId) return;
+        console.error('Failed to load agent detail', error);
+        detailError.value = 'Agent 详情加载失败，请重试。';
+        selectedAgent.value = null;
     } finally {
-        if (requestId === detailRequestId) loadingDetail.value = false
+        if (requestId === detailRequestId) loadingDetail.value = false;
     }
 }
 
 function openDetail(agentId: string) {
-    selectedAgentId.value = agentId
-    void loadAgentDetail(agentId)
-    mode.value = 'detail'
+    selectedAgentId.value = agentId;
+    void loadAgentDetail(agentId);
+    mode.value = 'detail';
 }
 
 function goBackToList() {
-    mode.value = 'list'
+    mode.value = 'list';
 }
 
 function goToPage(p: number) {
-    if (p < 1 || p > pageData.value.total_pages || p === page.value) return
-    page.value = p
-    void loadAgents()
+    if (p < 1 || p > pageData.value.total_pages || p === page.value) return;
+    page.value = p;
+    void loadAgents();
 }
 
 function refreshList() {
-    void loadAgents()
+    void loadAgents();
 }
 
 // ─── 计算属性 ───
 
 const workloadTotal = computed(() => {
-    if (!selectedAgent.value) return 0
-    return selectedAgent.value.open_sub_task_count
-})
+    if (!selectedAgent.value) return 0;
+    return selectedAgent.value.open_sub_task_count;
+});
 
 // ─── 操作 ───
 
-const showResetKeyConfirm = ref(false)
-const showNewKeyDialog = ref(false)
-const newApiKey = ref('')
-const resettingKey = ref(false)
-const keyCopied = ref(false)
-const togglingStatus = ref(false)
+const showResetKeyConfirm = ref(false);
+const showNewKeyDialog = ref(false);
+const newApiKey = ref('');
+const resettingKey = ref(false);
+const keyCopied = ref(false);
+const togglingStatus = ref(false);
 
 // 改名/改角色/改描述
-const showEditDialog = ref(false)
-const editName = ref('')
-const editRole = ref('')
-const editDescription = ref('')
-const editError = ref('')
-const savingEdit = ref(false)
+const showEditDialog = ref(false);
+const editName = ref('');
+const editRole = ref('');
+const editDescription = ref('');
+const editError = ref('');
+const savingEdit = ref(false);
 
 const roleChanged = computed(() =>
     selectedAgent.value ? editRole.value !== selectedAgent.value.role : false
-)
+);
 
 function openEditDialog() {
-    if (!selectedAgent.value) return
-    editName.value = selectedAgent.value.name
-    editRole.value = selectedAgent.value.role
-    editDescription.value = selectedAgent.value.description ?? ''
-    editError.value = ''
-    showEditDialog.value = true
+    if (!selectedAgent.value) return;
+    editName.value = selectedAgent.value.name;
+    editRole.value = selectedAgent.value.role;
+    editDescription.value = selectedAgent.value.description ?? '';
+    editError.value = '';
+    showEditDialog.value = true;
 }
 
 // 也支持从卡片直接编辑
 function openEditDialogForAgent(agent: AdminAgentItem) {
-    selectedAgentId.value = agent.id
-    selectedAgent.value = agent as unknown as AdminAgentDetail
-    editName.value = agent.name
-    editRole.value = agent.role
-    editDescription.value = agent.description ?? ''
-    editError.value = ''
-    showEditDialog.value = true
+    selectedAgentId.value = agent.id;
+    selectedAgent.value = agent as unknown as AdminAgentDetail;
+    editName.value = agent.name;
+    editRole.value = agent.role;
+    editDescription.value = agent.description ?? '';
+    editError.value = '';
+    showEditDialog.value = true;
 }
 
 async function handleSaveEdit() {
-    if (!selectedAgentId.value) return
-    const name = editName.value.trim()
-    if (!name) { editError.value = '名称不能为空'; return }
-    savingEdit.value = true
-    editError.value = ''
+    if (!selectedAgentId.value) return;
+    const name = editName.value.trim();
+    if (!name) { editError.value = '名称不能为空'; return; }
+    savingEdit.value = true;
+    editError.value = '';
     try {
         await adminAgentApi.updateProfile(selectedAgentId.value, {
             name,
             role: roleChanged.value ? editRole.value : undefined,
             description: editDescription.value,
-        })
-        showEditDialog.value = false
-        toast(`${editName.value} 信息已更新`)
+        });
+        showEditDialog.value = false;
+        toast(`${editName.value} 信息已更新`);
         if (mode.value === 'detail') {
-            void loadAgentDetail(selectedAgentId.value)
+            void loadAgentDetail(selectedAgentId.value);
         }
-        void loadAgents()
+        void loadAgents();
     } catch (err: unknown) {
-        const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-        editError.value = msg ?? '保存失败，请重试'
-        toast.error(editError.value)
+        const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+        editError.value = msg ?? '保存失败，请重试';
+        toast.error(editError.value);
     } finally {
-        savingEdit.value = false
+        savingEdit.value = false;
     }
 }
 
 // 启用/禁用确认
-const showToggleConfirm = ref(false)
-const toggleTarget = ref<{ id: string; name: string; status: string } | null>(null)
+const showToggleConfirm = ref(false);
+const toggleTarget = ref<{ id: string; name: string; status: string } | null>(null);
 
 function confirmToggleStatus(agent: { id: string; name?: string; status: string }) {
-    toggleTarget.value = { id: agent.id, name: agent.name ?? selectedAgent.value?.name ?? '', status: agent.status }
-    showToggleConfirm.value = true
+    toggleTarget.value = { id: agent.id, name: agent.name ?? selectedAgent.value?.name ?? '', status: agent.status };
+    showToggleConfirm.value = true;
 }
 
 async function handleToggleStatus() {
-    if (!toggleTarget.value) return
-    showToggleConfirm.value = false
-    togglingStatus.value = true
-    const newStatus = toggleTarget.value.status === 'active' ? 'disabled' : 'active'
+    if (!toggleTarget.value) return;
+    showToggleConfirm.value = false;
+    togglingStatus.value = true;
+    const newStatus = toggleTarget.value.status === 'active' ? 'disabled' : 'active';
     try {
-        await adminAgentApi.updateStatus(toggleTarget.value.id, newStatus)
+        await adminAgentApi.updateStatus(toggleTarget.value.id, newStatus);
         if (mode.value === 'detail' && selectedAgentId.value === toggleTarget.value.id) {
-            void loadAgentDetail(toggleTarget.value.id)
+            void loadAgentDetail(toggleTarget.value.id);
         }
-        void loadAgents()
-        toast(newStatus === 'active' ? `${toggleTarget.value.name} 已被启用` : `${toggleTarget.value.name} 已被禁用`)
+        void loadAgents();
+        toast(newStatus === 'active' ? `${toggleTarget.value.name} 已被启用` : `${toggleTarget.value.name} 已被禁用`);
     } catch (err) {
-        console.error('Failed to toggle status', err)
-        toast.error('状态切换失败')
+        console.error('Failed to toggle status', err);
+        toast.error('状态切换失败');
     } finally {
-        togglingStatus.value = false
+        togglingStatus.value = false;
     }
 }
 
 async function handleResetKey() {
-    if (!selectedAgentId.value) return
-    resettingKey.value = true
+    if (!selectedAgentId.value) return;
+    resettingKey.value = true;
     try {
-        const response = await adminApi.resetKey(selectedAgentId.value)
-        newApiKey.value = response.data.new_api_key
-        showResetKeyConfirm.value = false
-        showNewKeyDialog.value = true
+        const response = await adminApi.resetKey(selectedAgentId.value);
+        newApiKey.value = response.data.new_api_key;
+        showResetKeyConfirm.value = false;
+        showNewKeyDialog.value = true;
     } catch (error) {
-        console.error('Failed to reset key', error)
+        console.error('Failed to reset key', error);
     } finally {
-        resettingKey.value = false
+        resettingKey.value = false;
     }
 }
 
 async function copyNewKey() {
     try {
-        await clipboardCopy(newApiKey.value)
-        keyCopied.value = true
-        setTimeout(() => { keyCopied.value = false }, 2000)
+        await clipboardCopy(newApiKey.value);
+        keyCopied.value = true;
+        setTimeout(() => { keyCopied.value = false; }, 2000);
     } catch {
         // fallback: select text
     }
 }
 
 // 删除 Agent
-const showDeleteDialog = ref(false)
-const deleteConfirmInput = ref('')
-const deletingAgent = ref(false)
-const deleteError = ref('')
-const relatedCounts = ref<Record<string, number> | null>(null)
-const loadingCounts = ref(false)
+const showDeleteDialog = ref(false);
+const deleteConfirmInput = ref('');
+const deletingAgent = ref(false);
+const deleteError = ref('');
+const relatedCounts = ref<Record<string, number> | null>(null);
+const loadingCounts = ref(false);
 
 const deleteConfirmValid = computed(() =>
     selectedAgent.value
         ? deleteConfirmInput.value.trim() === `确认删除${selectedAgent.value.name}`
         : false
-)
+);
 
 async function openDeleteDialog() {
-    if (!selectedAgentId.value || !selectedAgent.value) return
-    deleteConfirmInput.value = ''
-    deleteError.value = ''
-    relatedCounts.value = null
-    showDeleteDialog.value = true
-    loadingCounts.value = true
+    if (!selectedAgentId.value || !selectedAgent.value) return;
+    deleteConfirmInput.value = '';
+    deleteError.value = '';
+    relatedCounts.value = null;
+    showDeleteDialog.value = true;
+    loadingCounts.value = true;
     try {
-        const res = await adminAgentApi.relatedCounts(selectedAgentId.value)
-        relatedCounts.value = res.data
+        const res = await adminAgentApi.relatedCounts(selectedAgentId.value);
+        relatedCounts.value = res.data;
     } catch {
-        relatedCounts.value = null
+        relatedCounts.value = null;
     } finally {
-        loadingCounts.value = false
+        loadingCounts.value = false;
     }
 }
 
 // 从卡片上直接删除
 function openDeleteDialogForAgent(agent: AdminAgentItem) {
-    selectedAgentId.value = agent.id
-    selectedAgent.value = agent as unknown as AdminAgentDetail
-    void openDeleteDialog()
+    selectedAgentId.value = agent.id;
+    selectedAgent.value = agent as unknown as AdminAgentDetail;
+    void openDeleteDialog();
 }
 
 async function handleDeleteAgent() {
-    if (!selectedAgentId.value || !selectedAgent.value || !deleteConfirmValid.value) return
-    deletingAgent.value = true
-    deleteError.value = ''
+    if (!selectedAgentId.value || !selectedAgent.value || !deleteConfirmValid.value) return;
+    deletingAgent.value = true;
+    deleteError.value = '';
     try {
-        await adminAgentApi.deleteAgent(selectedAgentId.value, selectedAgent.value.name)
-        showDeleteDialog.value = false
-        toast(`${selectedAgent.value.name} 已被删除`)
-        selectedAgentId.value = null
-        selectedAgent.value = null
-        if (mode.value === 'detail') mode.value = 'list'
-        void loadAgents()
+        await adminAgentApi.deleteAgent(selectedAgentId.value, selectedAgent.value.name);
+        showDeleteDialog.value = false;
+        toast(`${selectedAgent.value.name} 已被删除`);
+        selectedAgentId.value = null;
+        selectedAgent.value = null;
+        if (mode.value === 'detail') mode.value = 'list';
+        void loadAgents();
     } catch (err: unknown) {
-        const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-        deleteError.value = msg ?? '删除失败，请重试'
+        const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+        deleteError.value = msg ?? '删除失败，请重试';
     } finally {
-        deletingAgent.value = false
+        deletingAgent.value = false;
     }
 }
 </script>

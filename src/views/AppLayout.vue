@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { setupApi } from '@/api/client'
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { setupApi, webuiApi } from '@/api/client';
+import type { WebUIVersionInfo } from '@/api/client';
 import {
   Sidebar,
   SidebarContent,
@@ -17,9 +18,9 @@ import {
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
-} from '@/components/ui/sidebar'
-import { Separator } from '@/components/ui/separator'
-import { Button } from '@/components/ui/button'
+} from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
   ListTodo,
@@ -30,25 +31,64 @@ import {
   BookText,
   Settings,
   LogOut,
-} from 'lucide-vue-next'
+  Download,
+  AlertTriangle,
+  X,
+  Loader2,
+} from 'lucide-vue-next';
 
-const router = useRouter()
-const route = useRoute()
-const auth = useAuthStore()
+const router = useRouter();
+const route = useRoute();
+const auth = useAuthStore();
+const localWebUIVersion = __VERSION__;
 
-const showLogoutConfirm = ref(false)
-const showUrlMissing = ref(false)
+const showLogoutConfirm = ref(false);
+const showUrlMissing = ref(false);
+
+// WebUI 更新状态
+const webuiVersion = ref<WebUIVersionInfo | null>(null);
+const webuiUpdating = ref(false);
+const showUpdateBanner = ref(false);
 
 onMounted(async () => {
   try {
-    const { data } = await setupApi.status()
+    const { data } = await setupApi.status();
     if (data.initialized && !data.has_external_url) {
-      showUrlMissing.value = true
+      showUrlMissing.value = true;
     }
   } catch {
     // 静默失败
   }
-})
+
+  // 检查 WebUI 更新
+  try {
+    const { data } = await webuiApi.version();
+    webuiVersion.value = data;
+    if (data.update_available) {
+      showUpdateBanner.value = true;
+    }
+  } catch {
+    // 静默失败
+  }
+});
+
+async function handleWebuiUpdate() {
+  webuiUpdating.value = true;
+  try {
+    await webuiApi.update();
+    // 更新成功，提示用户刷新
+    webuiVersion.value = null;
+    showUpdateBanner.value = false;
+    // 延迟刷新
+    setTimeout(() => window.location.reload(), 1500);
+  } catch {
+    webuiUpdating.value = false;
+  }
+}
+
+function dismissUpdateBanner() {
+  showUpdateBanner.value = false;
+}
 
 const menuItems = [
   { title: '仪表盘', icon: LayoutDashboard, path: '/dashboard' },
@@ -59,11 +99,11 @@ const menuItems = [
   { title: '审查记录', icon: FileSearch, path: '/reviews' },
   { title: '提示词管理', icon: BookText, path: '/prompts' },
   { title: '系统设置', icon: Settings, path: '/settings' },
-]
+];
 
 function handleLogout() {
-  auth.logout()
-  router.push('/login')
+  auth.logout();
+  router.push('/login');
 }
 </script>
 
@@ -77,9 +117,14 @@ function handleLogout() {
             class="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground text-base font-bold shadow-[var(--shadow-sm)]">
             M
           </div>
-          <div>
+          <div class="flex flex-col justify-center">
             <div class="font-bold text-base tracking-tight">OpenMOSS</div>
-            <div class="text-[11px] text-muted-foreground/60">多 Agent 协作平台</div>
+            <div class="flex flex-col items-start gap-1 mt-0.5">
+              <span class="text-[11px] text-muted-foreground/60 leading-none">多 Agent 协作平台</span>
+              <span
+                class="text-[9px] font-medium px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-200/60 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 leading-none">WebUI
+                v{{ localWebUIVersion }}</span>
+            </div>
           </div>
         </div>
         <!-- 装饰线 -->
@@ -88,7 +133,8 @@ function handleLogout() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel class="px-5 text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">导航</SidebarGroupLabel>
+          <SidebarGroupLabel class="px-5 text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">
+            导航</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu class="space-y-1 px-2">
               <SidebarMenuItem v-for="item in menuItems" :key="item.path">
@@ -124,6 +170,51 @@ function handleLogout() {
           {{menuItems.find(i => i.path === route.path)?.title || ''}}
         </h1>
       </header>
+
+      <!-- WebUI 更新提示 Banner -->
+      <Transition name="slide-down">
+        <div v-if="showUpdateBanner && webuiVersion" class="px-4 pt-2">
+          <!-- 升级提示 -->
+          <div v-if="webuiVersion.update_type === 'upgrade'"
+            class="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 dark:border-blue-900 dark:bg-blue-950/50">
+            <Download class="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+            <span class="flex-1 text-sm text-blue-800 dark:text-blue-200">
+              🎉 WebUI <strong>v{{ webuiVersion.latest_version }}</strong> 可用
+              <span v-if="webuiVersion.current_version" class="text-blue-600/60 dark:text-blue-400/60">
+                (当前 v{{ webuiVersion.current_version }})
+              </span>
+            </span>
+            <Button v-if="auth.isAuthenticated" size="sm" variant="outline"
+              class="h-7 border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/50"
+              :disabled="webuiUpdating" @click="handleWebuiUpdate">
+              <Loader2 v-if="webuiUpdating" class="mr-1 h-3 w-3 animate-spin" />
+              {{ webuiUpdating ? '更新中...' : '立即更新' }}
+            </Button>
+            <button class="text-blue-400 hover:text-blue-600 dark:hover:text-blue-300" @click="dismissUpdateBanner">
+              <X class="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <!-- 回滚提示 -->
+          <div v-else-if="webuiVersion.update_type === 'rollback'"
+            class="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 dark:border-amber-900 dark:bg-amber-950/50">
+            <AlertTriangle class="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span class="flex-1 text-sm text-amber-800 dark:text-amber-200">
+              ⚠️ 当前版本 v{{ webuiVersion.current_version }} 已被撤回
+            </span>
+            <Button v-if="auth.isAuthenticated" size="sm" variant="outline"
+              class="h-7 border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/50"
+              :disabled="webuiUpdating" @click="handleWebuiUpdate">
+              <Loader2 v-if="webuiUpdating" class="mr-1 h-3 w-3 animate-spin" />
+              {{ webuiUpdating ? '恢复中...' : `恢复到 v${webuiVersion.latest_version}` }}
+            </Button>
+            <button class="text-amber-400 hover:text-amber-600 dark:hover:text-amber-300" @click="dismissUpdateBanner">
+              <X class="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </Transition>
+
       <main class="flex-1 p-6">
         <router-view />
       </main>
@@ -196,5 +287,16 @@ function handleLogout() {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 </style>
