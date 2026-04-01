@@ -49,7 +49,7 @@ webui:
   public_feed: false # 活动流展示页公开开关（true=任何人可访问）
   feed_retention_days: 7 # 请求日志保留天数（超期自动清理）
   auto_update: true # 启用 WebUI 自动更新（启动时如无前端也会自动拉取）
-  github_repo: "w-xuefeng/OpenMOSS" # GitHub 仓库（用于下载 WebUI Release）
+  github_repo: "uluckyXH/OpenMOSS" # GitHub 仓库（用于下载 WebUI Release）
 
 # 初始化标记（由 Setup Wizard 自动设置，请勿手动修改）
 setup:

@@ -234,7 +234,7 @@ class AppConfig:
     @property
     def webui_github_repo(self) -> str:
         """WebUI GitHub 仓库（owner/repo 格式），用于下载 Release"""
-        return self._data.get("webui", {}).get("github_repo", "w-xuefeng/OpenMOSS")
+        return self._data.get("webui", {}).get("github_repo", "uluckyXH/OpenMOSS")
 
     @property
     def webui_auto_update(self) -> bool:
