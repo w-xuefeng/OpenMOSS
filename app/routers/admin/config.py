@@ -15,9 +15,9 @@ class ConfigUpdateRequest(BaseModel):
     """可更新的配置项"""
     project: Optional[dict] = Field(None, description="项目配置，如 {\"name\": \"xxx\"}")
     agent: Optional[dict] = Field(None, description="Agent 配置，如 {\"registration_token\": \"xxx\", \"allow_registration\": true}")
-    notification: Optional[dict] = Field(None, description="通知配置")
+    notification: Optional[dict] = Field(None, description="全局通知配置")
     webui: Optional[dict] = Field(None, description="WebUI 配置")
-    workspace: Optional[dict] = Field(None, description="工作目录配置，如 {\"root\": \"/path\"}")
+    workspace: Optional[dict] = Field(None, description="宿主公共工作目录配置，如 {\"root\": \"/path\"}")
     server: Optional[dict] = Field(None, description="服务配置，如 {\"external_url\": \"https://...\"}")
 
 

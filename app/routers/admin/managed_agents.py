@@ -1,7 +1,5 @@
 """
 管理端路由 — 配置态 Agent 管理
-
-当前先把 API 语义切到最新设计，同时保留少量旧路径兼容别名。
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -16,8 +14,6 @@ from app.schemas.managed_agent import (
     ManagedAgentHostConfigRequest,
     ManagedAgentHostConfigResponse,
     ManagedAgentListItem,
-    ManagedAgentNotificationChannelRequest,
-    ManagedAgentNotificationChannelResponse,
     ManagedAgentPageResponse,
     ManagedAgentPromptAssetRequest,
     ManagedAgentPromptAssetResponse,
@@ -26,7 +22,7 @@ from app.schemas.managed_agent import (
     ManagedAgentScheduleResponse,
     ManagedAgentUpdateRequest,
 )
-from app.services import managed_agent_service as svc
+from app.services import managed_agent as svc
 
 router = APIRouter(
     prefix="/admin/managed-agents",
@@ -78,9 +74,8 @@ def create_agent(
             host_platform=req.host_platform,
             deployment_mode=req.deployment_mode,
             host_access_mode=req.host_access_mode,
-            host_agent_identifier=req.host_agent_identifier or req.openclaw_agent_id,
-            workdir_path=req.workdir_path or req.workspace_path,
-            default_model=req.default_model or req.model,
+            host_agent_identifier=req.host_agent_identifier,
+            workdir_path=req.workdir_path,
         )
         return ManagedAgentDetail.model_validate(agent)
     except ValueError as exc:
@@ -169,7 +164,6 @@ def update_host_config(
 
 
 @router.get("/{agent_id}/prompt-asset", response_model=ManagedAgentPromptAssetResponse)
-@router.get("/{agent_id}/prompt", response_model=ManagedAgentPromptAssetResponse, include_in_schema=False)
 def get_prompt_asset(
     agent_id: str,
     _: bool = Depends(verify_admin),
@@ -184,7 +178,6 @@ def get_prompt_asset(
 
 
 @router.put("/{agent_id}/prompt-asset", response_model=ManagedAgentPromptAssetResponse)
-@router.put("/{agent_id}/prompt", response_model=ManagedAgentPromptAssetResponse, include_in_schema=False)
 def update_prompt_asset(
     agent_id: str,
     req: ManagedAgentPromptAssetRequest,
@@ -204,7 +197,6 @@ def update_prompt_asset(
 
 
 @router.post("/{agent_id}/prompt-asset/reset-from-template", response_model=ManagedAgentPromptAssetResponse)
-@router.post("/{agent_id}/prompt/reset-from-template", response_model=ManagedAgentPromptAssetResponse, include_in_schema=False)
 def reset_prompt_asset(
     agent_id: str,
     _: bool = Depends(verify_admin),
@@ -306,7 +298,6 @@ def delete_schedule(
 
 
 @router.get("/{agent_id}/comm-bindings", response_model=list[ManagedAgentCommBindingResponse])
-@router.get("/{agent_id}/platform-bindings", response_model=list[ManagedAgentCommBindingResponse], include_in_schema=False)
 def list_comm_bindings(
     agent_id: str,
     _: bool = Depends(verify_admin),
@@ -324,7 +315,6 @@ def list_comm_bindings(
 
 
 @router.post("/{agent_id}/comm-bindings", response_model=ManagedAgentCommBindingResponse, status_code=201)
-@router.post("/{agent_id}/platform-bindings", response_model=ManagedAgentCommBindingResponse, include_in_schema=False, status_code=201)
 def create_comm_binding(
     agent_id: str,
     req: ManagedAgentCommBindingRequest,
@@ -344,7 +334,6 @@ def create_comm_binding(
 
 
 @router.put("/{agent_id}/comm-bindings/{binding_id}", response_model=ManagedAgentCommBindingResponse)
-@router.put("/{agent_id}/platform-bindings/{binding_id}", response_model=ManagedAgentCommBindingResponse, include_in_schema=False)
 def update_comm_binding(
     agent_id: str,
     binding_id: str,
@@ -368,7 +357,6 @@ def update_comm_binding(
 
 
 @router.delete("/{agent_id}/comm-bindings/{binding_id}", status_code=204)
-@router.delete("/{agent_id}/platform-bindings/{binding_id}", status_code=204, include_in_schema=False)
 def delete_comm_binding(
     agent_id: str,
     binding_id: str,
@@ -381,78 +369,5 @@ def delete_comm_binding(
         if binding.managed_agent_id != agent_id:
             raise HTTPException(status_code=404, detail="通讯平台账号绑定不存在")
         svc.delete_comm_binding(db, binding_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
-
-
-@router.get("/{agent_id}/notification-channels", response_model=list[ManagedAgentNotificationChannelResponse])
-def list_notification_channels(
-    agent_id: str,
-    _: bool = Depends(verify_admin),
-    db: Session = Depends(get_db),
-):
-    """获取通知渠道。"""
-    try:
-        channels = svc.list_notification_channels(db, agent_id)
-        return [ManagedAgentNotificationChannelResponse.model_validate(item) for item in channels]
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
-
-
-@router.post("/{agent_id}/notification-channels", response_model=ManagedAgentNotificationChannelResponse, status_code=201)
-def create_notification_channel(
-    agent_id: str,
-    req: ManagedAgentNotificationChannelRequest,
-    _: bool = Depends(verify_admin),
-    db: Session = Depends(get_db),
-):
-    """创建通知渠道。"""
-    try:
-        channel = svc.create_notification_channel(
-            db,
-            agent_id,
-            **req.model_dump(exclude_none=True),
-        )
-        return ManagedAgentNotificationChannelResponse.model_validate(channel)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-
-
-@router.put("/{agent_id}/notification-channels/{channel_id}", response_model=ManagedAgentNotificationChannelResponse)
-def update_notification_channel(
-    agent_id: str,
-    channel_id: str,
-    req: ManagedAgentNotificationChannelRequest,
-    _: bool = Depends(verify_admin),
-    db: Session = Depends(get_db),
-):
-    """更新通知渠道。"""
-    try:
-        channel = svc.get_notification_channel_or_404(db, channel_id)
-        if channel.managed_agent_id != agent_id:
-            raise HTTPException(status_code=404, detail="通知渠道不存在")
-        channel = svc.update_notification_channel(
-            db,
-            channel_id,
-            **req.model_dump(exclude_none=True),
-        )
-        return ManagedAgentNotificationChannelResponse.model_validate(channel)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-
-
-@router.delete("/{agent_id}/notification-channels/{channel_id}", status_code=204)
-def delete_notification_channel(
-    agent_id: str,
-    channel_id: str,
-    _: bool = Depends(verify_admin),
-    db: Session = Depends(get_db),
-):
-    """删除通知渠道。"""
-    try:
-        channel = svc.get_notification_channel_or_404(db, channel_id)
-        if channel.managed_agent_id != agent_id:
-            raise HTTPException(status_code=404, detail="通知渠道不存在")
-        svc.delete_notification_channel(db, channel_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))

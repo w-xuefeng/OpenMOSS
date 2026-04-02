@@ -25,12 +25,6 @@ class ManagedAgentCreateRequest(BaseModel):
     # 新结构推荐字段
     host_agent_identifier: Optional[str] = Field(default=None, description="宿主平台中的 Agent 标识")
     workdir_path: Optional[str] = Field(default=None, description="宿主平台中的工作目录")
-    default_model: Optional[str] = Field(default=None, description="默认模型")
-
-    # 兼容旧字段输入
-    openclaw_agent_id: Optional[str] = Field(default=None, description="兼容旧字段")
-    workspace_path: Optional[str] = Field(default=None, description="兼容旧字段")
-    model: Optional[str] = Field(default=None, description="兼容旧字段")
 
 
 class ManagedAgentUpdateRequest(BaseModel):
@@ -88,14 +82,8 @@ class ManagedAgentHostConfigRequest(BaseModel):
     """创建/更新宿主平台配置"""
     host_agent_identifier: Optional[str] = None
     workdir_path: Optional[str] = None
-    default_model: Optional[str] = None
     host_config_payload: Optional[str] = Field(default=None, description="明文配置文本，当前先原样存储")
     host_metadata_json: Optional[str] = None
-
-    # 兼容旧字段输入
-    openclaw_agent_id: Optional[str] = None
-    workspace_path: Optional[str] = None
-    model: Optional[str] = None
 
 
 class ManagedAgentHostConfigResponse(BaseModel):
@@ -105,7 +93,6 @@ class ManagedAgentHostConfigResponse(BaseModel):
     host_platform: str
     host_agent_identifier: Optional[str] = None
     workdir_path: Optional[str] = None
-    default_model: Optional[str] = None
     host_config_payload_masked: Optional[str] = None
     host_metadata_json: Optional[str] = None
     created_at: datetime
@@ -127,14 +114,6 @@ class ManagedAgentPromptAssetRequest(BaseModel):
     identity_content: Optional[str] = None
     host_render_strategy: Optional[str] = Field(default=None, description="host_default/openclaw_workspace_files/openclaw_inline_schedule")
     notes: Optional[str] = None
-
-    # 兼容旧字段输入
-    prompt_delivery_mode: Optional[str] = Field(default=None, description="兼容旧字段")
-    agents_md_content: Optional[str] = None
-    soul_md_content: Optional[str] = None
-    identity_name: Optional[str] = None
-    identity_emoji: Optional[str] = None
-    identity_theme: Optional[str] = None
 
 
 class ManagedAgentPromptAssetResponse(BaseModel):
@@ -183,13 +162,6 @@ class ManagedAgentScheduleRequest(BaseModel):
     execution_options_json: Optional[str] = None
     schedule_message_content: str = Field(default="", description="唤醒提示词")
 
-    # 兼容旧字段输入
-    every: Optional[str] = None
-    thinking_mode: Optional[str] = None
-    announce: Optional[bool] = None
-    session_mode: Optional[str] = None
-    cron_message_content: Optional[str] = None
-
 
 class ManagedAgentScheduleResponse(BaseModel):
     """定时任务响应"""
@@ -225,12 +197,6 @@ class ManagedAgentCommBindingRequest(BaseModel):
     metadata_json: Optional[str] = None
     config_payload: Optional[str] = Field(default=None, description="平台配置文本，当前先原样存储")
 
-    # 兼容旧字段输入
-    platform: Optional[str] = None
-    account_id: Optional[str] = None
-    routing_policy: Optional[str] = None
-    secret_payload: Optional[str] = None
-
 
 class ManagedAgentCommBindingResponse(BaseModel):
     """通讯平台账号绑定响应"""
@@ -243,44 +209,6 @@ class ManagedAgentCommBindingResponse(BaseModel):
     routing_policy_json: Optional[str] = None
     metadata_json: Optional[str] = None
     config_payload_masked: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-# ============================================================
-# Notification Channel
-# ============================================================
-
-
-class ManagedAgentNotificationChannelRequest(BaseModel):
-    """创建/更新通知渠道"""
-    comm_binding_id: Optional[str] = None
-    provider: str
-    channel_type: str
-    channel_identifier: str
-    display_name: Optional[str] = None
-    enabled: bool = True
-    event_subscriptions_json: Optional[str] = None
-    delivery_options_json: Optional[str] = None
-    priority: int = 100
-
-
-class ManagedAgentNotificationChannelResponse(BaseModel):
-    """通知渠道响应"""
-    id: str
-    managed_agent_id: str
-    comm_binding_id: Optional[str] = None
-    provider: str
-    channel_type: str
-    channel_identifier: str
-    display_name: Optional[str] = None
-    enabled: bool
-    event_subscriptions_json: Optional[str] = None
-    delivery_options_json: Optional[str] = None
-    priority: int
     created_at: datetime
     updated_at: datetime
 

@@ -21,7 +21,7 @@ class SetupInitializeRequest(BaseModel):
     admin_password: str = Field(..., min_length=6, description="管理员密码（至少6位）")
     current_password: Optional[str] = Field(None, description="当前管理员密码（仅数据库有数据时必填）")
     project_name: str = Field(..., min_length=1, description="项目名称")
-    workspace_root: str = Field(..., min_length=1, description="工作目录路径")
+    workspace_root: str = Field(..., min_length=1, description="宿主部署机公共工作目录路径")
     registration_token: Optional[str] = Field(None, description="Agent 注册令牌（不填则自动生成）")
     allow_registration: bool = Field(True, description="是否允许 Agent 自注册")
     notification: Optional[dict] = Field(None, description="通知配置")

@@ -67,7 +67,7 @@ async def lifespan(app: FastAPI):
 
     # 自动回填：把已有运行态 Agent 同步到配置态
     from app.database import SessionLocal
-    from app.services.managed_agent_service import auto_backfill_from_runtime
+    from app.services.managed_agent import auto_backfill_from_runtime
     _backfill_db = SessionLocal()
     try:
         auto_backfill_from_runtime(_backfill_db)
@@ -83,7 +83,7 @@ async def lifespan(app: FastAPI):
 
     print(f"[{config.project_name}] 服务启动 → http://{config.server_host}:{config.server_port}")
     print(f"[{config.project_name}] 数据库: {config.database_path}")
-    print(f"[{config.project_name}] 工作目录: {config.workspace_root}")
+    print(f"[{config.project_name}] 宿主公共工作目录: {config.workspace_root}")
     print(f"[{config.project_name}] 注册令牌: {config.registration_token}")
     yield
     print(f"[{config.project_name}] 服务关闭")
@@ -138,7 +138,7 @@ async def health_check():
 
 @app.get("/api/config/notification", tags=["Config"])
 async def get_notification_config(agent=Depends(get_current_agent)):
-    """Agent 获取通知渠道配置（往哪里发通知）"""
+    """Agent 获取全局通知配置。"""
     notification = config.notification_config
     return {
         "enabled": notification.get("enabled", False),
@@ -205,4 +205,3 @@ async def serve_spa(full_path: str):
     return JSONResponse(status_code=404, content={"detail": "WebUI not found"})
 
 print(f"[WebUI] 已挂载前端: {os.path.abspath(_webui_dist)}")
-

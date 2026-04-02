@@ -211,6 +211,11 @@ class AppConfig:
 
     @property
     def workspace_root(self) -> str:
+        """宿主部署机公共工作目录。
+
+        注意：这是系统配置里声明的宿主环境共享工作目录，
+        不是 OpenMOSS 服务端自己的本地目录语义。
+        """
         return self._data.get("workspace", {}).get("root", "./workspace")
 
     @property

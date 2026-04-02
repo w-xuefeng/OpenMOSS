@@ -60,7 +60,6 @@ class ManagedAgentHostConfig(Base):
     host_platform = Column(String(30), nullable=False, comment="宿主平台")
     host_agent_identifier = Column(String(100), nullable=True, comment="宿主平台中的 Agent 标识")
     workdir_path = Column(String(500), nullable=True, comment="宿主平台中的工作目录")
-    default_model = Column(String(100), nullable=True, comment="默认模型")
     host_config_payload_encrypted = Column(Text, nullable=True, comment="宿主平台特有配置（预留加密）")
     host_metadata_json = Column(Text, nullable=True, comment="宿主平台非敏感扩展信息 JSON")
     created_at = Column(DateTime, default=datetime.now, comment="创建时间")
@@ -117,25 +116,6 @@ class ManagedAgentCommBinding(Base):
     config_payload_encrypted = Column(Text, nullable=True, comment="加密后的平台配置")
     routing_policy_json = Column(Text, nullable=True, comment="路由策略 JSON")
     metadata_json = Column(Text, nullable=True, comment="非敏感补充信息 JSON")
-    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间")
-
-
-class ManagedAgentNotificationChannel(Base):
-    """通知渠道（1:N）"""
-    __tablename__ = "managed_agent_notification_channel"
-
-    id = Column(String(36), primary_key=True, default=_uuid)
-    managed_agent_id = Column(String(36), nullable=False, index=True, comment="关联 managed_agent.id")
-    comm_binding_id = Column(String(36), nullable=True, index=True, comment="可选关联通讯平台账号")
-    provider = Column(String(30), nullable=False, comment="渠道平台")
-    channel_type = Column(String(30), nullable=False, comment="group / dm / channel / email / webhook")
-    channel_identifier = Column(String(500), nullable=False, comment="群 ID / 用户 ID / 地址 / URL")
-    display_name = Column(String(100), nullable=True, comment="展示名")
-    enabled = Column(Boolean, default=True, comment="是否启用")
-    event_subscriptions_json = Column(Text, nullable=True, comment="订阅事件 JSON")
-    delivery_options_json = Column(Text, nullable=True, comment="投递选项 JSON")
-    priority = Column(Integer, default=100, comment="优先级")
     created_at = Column(DateTime, default=datetime.now, comment="创建时间")
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间")
 

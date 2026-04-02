@@ -1,6 +1,6 @@
 # OpenMOSS 任务调度中间件 — 配置文件模板
 # 复制此文件为 config.yaml 并修改配置
-# Docker 部署时，容器会默认将工作目录挂载到 /workspace
+# Docker 部署时，容器会默认将宿主公共工作目录挂载到 /workspace
 
 # 项目名称
 project:
@@ -15,7 +15,7 @@ agent:
   registration_token: "openclaw-register-2024" # Agent 自动注册令牌
   allow_registration: true # Agent 自注册开关（false=关闭自注册，只能由管理员创建）
 
-# 通知渠道（OpenMOSS 内置消息，Agent 通过 GET /config/notification 获取后自行发送）
+# 全局通知配置（OpenMOSS 内置消息，Agent 通过 GET /config/notification 获取后自行发送）
 notification:
   enabled: false
   # 目标渠道：格式为 渠道类型:目标ID
@@ -40,9 +40,9 @@ database:
   type: sqlite
   path: "./data/tasks.db"
 
-# 工作目录
+# 宿主公共工作目录
 workspace:
-  root: "/workspace"
+  root: "/workspace" # 指宿主部署机上的共享工作目录，不是 OpenMOSS 服务端自己的本地目录
 
 # WebUI 配置
 webui:
