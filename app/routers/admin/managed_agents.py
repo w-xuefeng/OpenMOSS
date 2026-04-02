@@ -1,0 +1,458 @@
+"""
+管理端路由 — 配置态 Agent 管理
+
+当前先把 API 语义切到最新设计，同时保留少量旧路径兼容别名。
+"""
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+
+from app.auth.dependencies import verify_admin
+from app.database import get_db
+from app.schemas.managed_agent import (
+    ManagedAgentCommBindingRequest,
+    ManagedAgentCommBindingResponse,
+    ManagedAgentCreateRequest,
+    ManagedAgentDetail,
+    ManagedAgentHostConfigRequest,
+    ManagedAgentHostConfigResponse,
+    ManagedAgentListItem,
+    ManagedAgentNotificationChannelRequest,
+    ManagedAgentNotificationChannelResponse,
+    ManagedAgentPageResponse,
+    ManagedAgentPromptAssetRequest,
+    ManagedAgentPromptAssetResponse,
+    ManagedAgentPromptRenderPreviewResponse,
+    ManagedAgentScheduleRequest,
+    ManagedAgentScheduleResponse,
+    ManagedAgentUpdateRequest,
+)
+from app.services import managed_agent_service as svc
+
+router = APIRouter(
+    prefix="/admin/managed-agents",
+    tags=["Admin - 配置态 Agent"],
+)
+
+
+@router.get("", response_model=ManagedAgentPageResponse)
+def list_agents(
+    _: bool = Depends(verify_admin),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    role: str = Query(None),
+    status: str = Query(None),
+    db: Session = Depends(get_db),
+):
+    """分页查询配置态 Agent。"""
+    items, total = svc.list_managed_agents(db, page, page_size, role, status)
+
+    result_items = []
+    for item in items:
+        list_item = ManagedAgentListItem.model_validate(item)
+        if item.config_version and item.deployed_config_version:
+            list_item.needs_redeploy = item.config_version != item.deployed_config_version
+        result_items.append(list_item)
+
+    return ManagedAgentPageResponse(
+        items=result_items,
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.post("", response_model=ManagedAgentDetail, status_code=201)
+def create_agent(
+    req: ManagedAgentCreateRequest,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """创建配置态 Agent（草稿）。"""
+    try:
+        agent = svc.create_managed_agent(
+            db,
+            name=req.name,
+            slug=req.slug,
+            role=req.role,
+            description=req.description,
+            host_platform=req.host_platform,
+            deployment_mode=req.deployment_mode,
+            host_access_mode=req.host_access_mode,
+            host_agent_identifier=req.host_agent_identifier or req.openclaw_agent_id,
+            workdir_path=req.workdir_path or req.workspace_path,
+            default_model=req.default_model or req.model,
+        )
+        return ManagedAgentDetail.model_validate(agent)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.get("/{agent_id}", response_model=ManagedAgentDetail)
+def get_agent(
+    agent_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """获取配置态 Agent 详情。"""
+    agent = svc.get_managed_agent(db, agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent 不存在")
+    detail = ManagedAgentDetail.model_validate(agent)
+    if agent.config_version and agent.deployed_config_version:
+        detail.needs_redeploy = agent.config_version != agent.deployed_config_version
+    return detail
+
+
+@router.put("/{agent_id}", response_model=ManagedAgentDetail)
+def update_agent(
+    agent_id: str,
+    req: ManagedAgentUpdateRequest,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """更新配置态 Agent 基础信息。"""
+    try:
+        agent = svc.update_managed_agent(
+            db,
+            agent_id,
+            **req.model_dump(exclude_none=True),
+        )
+        return ManagedAgentDetail.model_validate(agent)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.delete("/{agent_id}", status_code=204)
+def delete_agent(
+    agent_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """删除配置态 Agent（硬删除）。"""
+    try:
+        svc.delete_managed_agent(db, agent_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/{agent_id}/host-config", response_model=ManagedAgentHostConfigResponse)
+def get_host_config(
+    agent_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """获取宿主平台配置。"""
+    svc.get_managed_agent_or_404(db, agent_id)
+    host_config = svc.get_host_config(db, agent_id)
+    if not host_config:
+        raise HTTPException(status_code=404, detail="宿主平台配置未配置")
+    return ManagedAgentHostConfigResponse.model_validate(svc.serialize_host_config(host_config))
+
+
+@router.put("/{agent_id}/host-config", response_model=ManagedAgentHostConfigResponse)
+def update_host_config(
+    agent_id: str,
+    req: ManagedAgentHostConfigRequest,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """更新宿主平台配置。"""
+    try:
+        host_config = svc.update_host_config(
+            db,
+            agent_id,
+            **req.model_dump(exclude_none=True),
+        )
+        return ManagedAgentHostConfigResponse.model_validate(svc.serialize_host_config(host_config))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.get("/{agent_id}/prompt-asset", response_model=ManagedAgentPromptAssetResponse)
+@router.get("/{agent_id}/prompt", response_model=ManagedAgentPromptAssetResponse, include_in_schema=False)
+def get_prompt_asset(
+    agent_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """获取 Prompt 资产。"""
+    svc.get_managed_agent_or_404(db, agent_id)
+    prompt_asset = svc.get_prompt_asset(db, agent_id)
+    if not prompt_asset:
+        raise HTTPException(status_code=404, detail="Prompt 资产未配置")
+    return ManagedAgentPromptAssetResponse.model_validate(prompt_asset)
+
+
+@router.put("/{agent_id}/prompt-asset", response_model=ManagedAgentPromptAssetResponse)
+@router.put("/{agent_id}/prompt", response_model=ManagedAgentPromptAssetResponse, include_in_schema=False)
+def update_prompt_asset(
+    agent_id: str,
+    req: ManagedAgentPromptAssetRequest,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """更新 Prompt 资产。"""
+    try:
+        prompt_asset = svc.update_prompt_asset(
+            db,
+            agent_id,
+            **req.model_dump(exclude_none=True),
+        )
+        return ManagedAgentPromptAssetResponse.model_validate(prompt_asset)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/{agent_id}/prompt-asset/reset-from-template", response_model=ManagedAgentPromptAssetResponse)
+@router.post("/{agent_id}/prompt/reset-from-template", response_model=ManagedAgentPromptAssetResponse, include_in_schema=False)
+def reset_prompt_asset(
+    agent_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """从角色模板重新初始化 Prompt 资产。"""
+    try:
+        prompt_asset = svc.reset_prompt_from_template(db, agent_id)
+        return ManagedAgentPromptAssetResponse.model_validate(prompt_asset)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/{agent_id}/prompt-asset/render-preview", response_model=ManagedAgentPromptRenderPreviewResponse)
+def render_prompt_preview(
+    agent_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """预览宿主平台渲染结果。"""
+    try:
+        preview = svc.render_prompt_preview(db, agent_id)
+        return ManagedAgentPromptRenderPreviewResponse.model_validate(preview)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.get("/{agent_id}/schedules", response_model=list[ManagedAgentScheduleResponse])
+def list_schedules(
+    agent_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """获取 Agent 的所有定时任务。"""
+    try:
+        schedules = svc.list_schedules(db, agent_id)
+        return [ManagedAgentScheduleResponse.model_validate(item) for item in schedules]
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/{agent_id}/schedules", response_model=ManagedAgentScheduleResponse, status_code=201)
+def create_schedule(
+    agent_id: str,
+    req: ManagedAgentScheduleRequest,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """创建定时任务。"""
+    try:
+        schedule = svc.create_schedule(
+            db,
+            agent_id,
+            **req.model_dump(exclude_none=True),
+        )
+        return ManagedAgentScheduleResponse.model_validate(schedule)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.put("/{agent_id}/schedules/{schedule_id}", response_model=ManagedAgentScheduleResponse)
+def update_schedule(
+    agent_id: str,
+    schedule_id: str,
+    req: ManagedAgentScheduleRequest,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """更新定时任务。"""
+    try:
+        schedule = svc.get_schedule_or_404(db, schedule_id)
+        if schedule.managed_agent_id != agent_id:
+            raise HTTPException(status_code=404, detail="定时任务不存在")
+        schedule = svc.update_schedule(
+            db,
+            schedule_id,
+            **req.model_dump(exclude_none=True),
+        )
+        return ManagedAgentScheduleResponse.model_validate(schedule)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.delete("/{agent_id}/schedules/{schedule_id}", status_code=204)
+def delete_schedule(
+    agent_id: str,
+    schedule_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """删除定时任务。"""
+    try:
+        schedule = svc.get_schedule_or_404(db, schedule_id)
+        if schedule.managed_agent_id != agent_id:
+            raise HTTPException(status_code=404, detail="定时任务不存在")
+        svc.delete_schedule(db, schedule_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/{agent_id}/comm-bindings", response_model=list[ManagedAgentCommBindingResponse])
+@router.get("/{agent_id}/platform-bindings", response_model=list[ManagedAgentCommBindingResponse], include_in_schema=False)
+def list_comm_bindings(
+    agent_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """获取通讯平台账号绑定。"""
+    try:
+        bindings = svc.list_comm_bindings(db, agent_id)
+        return [
+            ManagedAgentCommBindingResponse.model_validate(svc.serialize_comm_binding(item))
+            for item in bindings
+        ]
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/{agent_id}/comm-bindings", response_model=ManagedAgentCommBindingResponse, status_code=201)
+@router.post("/{agent_id}/platform-bindings", response_model=ManagedAgentCommBindingResponse, include_in_schema=False, status_code=201)
+def create_comm_binding(
+    agent_id: str,
+    req: ManagedAgentCommBindingRequest,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """创建通讯平台账号绑定。"""
+    try:
+        binding = svc.create_comm_binding(
+            db,
+            agent_id,
+            **req.model_dump(exclude_none=True),
+        )
+        return ManagedAgentCommBindingResponse.model_validate(svc.serialize_comm_binding(binding))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.put("/{agent_id}/comm-bindings/{binding_id}", response_model=ManagedAgentCommBindingResponse)
+@router.put("/{agent_id}/platform-bindings/{binding_id}", response_model=ManagedAgentCommBindingResponse, include_in_schema=False)
+def update_comm_binding(
+    agent_id: str,
+    binding_id: str,
+    req: ManagedAgentCommBindingRequest,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """更新通讯平台账号绑定。"""
+    try:
+        binding = svc.get_comm_binding_or_404(db, binding_id)
+        if binding.managed_agent_id != agent_id:
+            raise HTTPException(status_code=404, detail="通讯平台账号绑定不存在")
+        binding = svc.update_comm_binding(
+            db,
+            binding_id,
+            **req.model_dump(exclude_none=True),
+        )
+        return ManagedAgentCommBindingResponse.model_validate(svc.serialize_comm_binding(binding))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.delete("/{agent_id}/comm-bindings/{binding_id}", status_code=204)
+@router.delete("/{agent_id}/platform-bindings/{binding_id}", status_code=204, include_in_schema=False)
+def delete_comm_binding(
+    agent_id: str,
+    binding_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """删除通讯平台账号绑定。"""
+    try:
+        binding = svc.get_comm_binding_or_404(db, binding_id)
+        if binding.managed_agent_id != agent_id:
+            raise HTTPException(status_code=404, detail="通讯平台账号绑定不存在")
+        svc.delete_comm_binding(db, binding_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/{agent_id}/notification-channels", response_model=list[ManagedAgentNotificationChannelResponse])
+def list_notification_channels(
+    agent_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """获取通知渠道。"""
+    try:
+        channels = svc.list_notification_channels(db, agent_id)
+        return [ManagedAgentNotificationChannelResponse.model_validate(item) for item in channels]
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/{agent_id}/notification-channels", response_model=ManagedAgentNotificationChannelResponse, status_code=201)
+def create_notification_channel(
+    agent_id: str,
+    req: ManagedAgentNotificationChannelRequest,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """创建通知渠道。"""
+    try:
+        channel = svc.create_notification_channel(
+            db,
+            agent_id,
+            **req.model_dump(exclude_none=True),
+        )
+        return ManagedAgentNotificationChannelResponse.model_validate(channel)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.put("/{agent_id}/notification-channels/{channel_id}", response_model=ManagedAgentNotificationChannelResponse)
+def update_notification_channel(
+    agent_id: str,
+    channel_id: str,
+    req: ManagedAgentNotificationChannelRequest,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """更新通知渠道。"""
+    try:
+        channel = svc.get_notification_channel_or_404(db, channel_id)
+        if channel.managed_agent_id != agent_id:
+            raise HTTPException(status_code=404, detail="通知渠道不存在")
+        channel = svc.update_notification_channel(
+            db,
+            channel_id,
+            **req.model_dump(exclude_none=True),
+        )
+        return ManagedAgentNotificationChannelResponse.model_validate(channel)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.delete("/{agent_id}/notification-channels/{channel_id}", status_code=204)
+def delete_notification_channel(
+    agent_id: str,
+    channel_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """删除通知渠道。"""
+    try:
+        channel = svc.get_notification_channel_or_404(db, channel_id)
+        if channel.managed_agent_id != agent_id:
+            raise HTTPException(status_code=404, detail="通知渠道不存在")
+        svc.delete_notification_channel(db, channel_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))

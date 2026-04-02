@@ -1,0 +1,306 @@
+"""
+配置态 Agent 请求/响应 Schema
+"""
+from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
+
+# ============================================================
+# ManagedAgent
+# ============================================================
+
+
+class ManagedAgentCreateRequest(BaseModel):
+    """创建配置态 Agent"""
+    name: str = Field(..., min_length=1, max_length=100, description="名称")
+    slug: str = Field(..., min_length=1, max_length=100, description="稳定标识")
+    role: str = Field(..., description="角色: planner/executor/reviewer/patrol")
+    description: str = Field(default="", description="描述")
+    host_platform: str = Field(default="openclaw", description="宿主平台")
+    deployment_mode: str = Field(..., description="create_sub_agent/bind_existing_agent/bind_main_agent")
+    host_access_mode: str = Field(default="local", description="local/remote")
+
+    # 新结构推荐字段
+    host_agent_identifier: Optional[str] = Field(default=None, description="宿主平台中的 Agent 标识")
+    workdir_path: Optional[str] = Field(default=None, description="宿主平台中的工作目录")
+    default_model: Optional[str] = Field(default=None, description="默认模型")
+
+    # 兼容旧字段输入
+    openclaw_agent_id: Optional[str] = Field(default=None, description="兼容旧字段")
+    workspace_path: Optional[str] = Field(default=None, description="兼容旧字段")
+    model: Optional[str] = Field(default=None, description="兼容旧字段")
+
+
+class ManagedAgentUpdateRequest(BaseModel):
+    """更新配置态 Agent"""
+    name: Optional[str] = Field(default=None, max_length=100)
+    description: Optional[str] = None
+    host_platform: Optional[str] = None
+    deployment_mode: Optional[str] = None
+    host_access_mode: Optional[str] = None
+    status: Optional[str] = None
+
+
+class ManagedAgentListItem(BaseModel):
+    """列表项"""
+    id: str
+    name: str
+    slug: str
+    role: str
+    description: str
+    host_platform: str
+    deployment_mode: str
+    host_access_mode: str
+    status: str
+    runtime_agent_id: Optional[str] = None
+    config_version: int
+    deployed_config_version: Optional[int] = None
+    needs_redeploy: bool = False
+    online_status: Optional[str] = None
+    data_source: str = "managed"
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ManagedAgentDetail(ManagedAgentListItem):
+    """详情"""
+
+
+class ManagedAgentPageResponse(BaseModel):
+    """分页响应"""
+    items: List[ManagedAgentListItem]
+    total: int
+    page: int
+    page_size: int
+
+
+# ============================================================
+# Host Config
+# ============================================================
+
+
+class ManagedAgentHostConfigRequest(BaseModel):
+    """创建/更新宿主平台配置"""
+    host_agent_identifier: Optional[str] = None
+    workdir_path: Optional[str] = None
+    default_model: Optional[str] = None
+    host_config_payload: Optional[str] = Field(default=None, description="明文配置文本，当前先原样存储")
+    host_metadata_json: Optional[str] = None
+
+    # 兼容旧字段输入
+    openclaw_agent_id: Optional[str] = None
+    workspace_path: Optional[str] = None
+    model: Optional[str] = None
+
+
+class ManagedAgentHostConfigResponse(BaseModel):
+    """宿主平台配置响应"""
+    id: str
+    managed_agent_id: str
+    host_platform: str
+    host_agent_identifier: Optional[str] = None
+    workdir_path: Optional[str] = None
+    default_model: Optional[str] = None
+    host_config_payload_masked: Optional[str] = None
+    host_metadata_json: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ============================================================
+# Prompt Asset
+# ============================================================
+
+
+class ManagedAgentPromptAssetRequest(BaseModel):
+    """更新 Prompt 资产"""
+    system_prompt_content: Optional[str] = None
+    persona_prompt_content: Optional[str] = None
+    identity_content: Optional[str] = None
+    host_render_strategy: Optional[str] = Field(default=None, description="host_default/openclaw_workspace_files/openclaw_inline_schedule")
+    notes: Optional[str] = None
+
+    # 兼容旧字段输入
+    prompt_delivery_mode: Optional[str] = Field(default=None, description="兼容旧字段")
+    agents_md_content: Optional[str] = None
+    soul_md_content: Optional[str] = None
+    identity_name: Optional[str] = None
+    identity_emoji: Optional[str] = None
+    identity_theme: Optional[str] = None
+
+
+class ManagedAgentPromptAssetResponse(BaseModel):
+    """Prompt 资产响应"""
+    id: str
+    managed_agent_id: str
+    template_role: Optional[str] = None
+    system_prompt_content: str
+    persona_prompt_content: str
+    identity_content: str
+    host_render_strategy: str
+    authority_source: str
+    notes: Optional[str] = None
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ManagedAgentRenderedArtifact(BaseModel):
+    """宿主平台渲染结果"""
+    name: str
+    content: str
+
+
+class ManagedAgentPromptRenderPreviewResponse(BaseModel):
+    """Prompt 渲染预览"""
+    host_platform: str
+    host_render_strategy: str
+    artifacts: List[ManagedAgentRenderedArtifact]
+
+
+# ============================================================
+# Schedule
+# ============================================================
+
+
+class ManagedAgentScheduleRequest(BaseModel):
+    """创建/更新定时任务"""
+    name: str = Field(..., min_length=1, max_length=200)
+    enabled: bool = True
+    schedule_type: str = Field(default="interval", description="interval/cron")
+    schedule_expr: str = Field(default="15m", description="间隔或 cron 表达式")
+    timeout_seconds: int = Field(default=1800, ge=60)
+    model_override: Optional[str] = None
+    execution_options_json: Optional[str] = None
+    schedule_message_content: str = Field(default="", description="唤醒提示词")
+
+    # 兼容旧字段输入
+    every: Optional[str] = None
+    thinking_mode: Optional[str] = None
+    announce: Optional[bool] = None
+    session_mode: Optional[str] = None
+    cron_message_content: Optional[str] = None
+
+
+class ManagedAgentScheduleResponse(BaseModel):
+    """定时任务响应"""
+    id: str
+    managed_agent_id: str
+    name: str
+    enabled: bool
+    schedule_type: str
+    schedule_expr: str
+    timeout_seconds: int
+    model_override: Optional[str] = None
+    execution_options_json: Optional[str] = None
+    schedule_message_content: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ============================================================
+# Comm Binding
+# ============================================================
+
+
+class ManagedAgentCommBindingRequest(BaseModel):
+    """创建/更新通讯平台账号绑定"""
+    provider: Optional[str] = Field(default=None, description="feishu/slack/telegram/wechat/email/webhook")
+    binding_key: Optional[str] = Field(default=None, description="平台账号或连接标识")
+    display_name: Optional[str] = None
+    enabled: bool = True
+    routing_policy_json: Optional[str] = None
+    metadata_json: Optional[str] = None
+    config_payload: Optional[str] = Field(default=None, description="平台配置文本，当前先原样存储")
+
+    # 兼容旧字段输入
+    platform: Optional[str] = None
+    account_id: Optional[str] = None
+    routing_policy: Optional[str] = None
+    secret_payload: Optional[str] = None
+
+
+class ManagedAgentCommBindingResponse(BaseModel):
+    """通讯平台账号绑定响应"""
+    id: str
+    managed_agent_id: str
+    provider: str
+    binding_key: str
+    display_name: Optional[str] = None
+    enabled: bool
+    routing_policy_json: Optional[str] = None
+    metadata_json: Optional[str] = None
+    config_payload_masked: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ============================================================
+# Notification Channel
+# ============================================================
+
+
+class ManagedAgentNotificationChannelRequest(BaseModel):
+    """创建/更新通知渠道"""
+    comm_binding_id: Optional[str] = None
+    provider: str
+    channel_type: str
+    channel_identifier: str
+    display_name: Optional[str] = None
+    enabled: bool = True
+    event_subscriptions_json: Optional[str] = None
+    delivery_options_json: Optional[str] = None
+    priority: int = 100
+
+
+class ManagedAgentNotificationChannelResponse(BaseModel):
+    """通知渠道响应"""
+    id: str
+    managed_agent_id: str
+    comm_binding_id: Optional[str] = None
+    provider: str
+    channel_type: str
+    channel_identifier: str
+    display_name: Optional[str] = None
+    enabled: bool
+    event_subscriptions_json: Optional[str] = None
+    delivery_options_json: Optional[str] = None
+    priority: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ============================================================
+# Bootstrap Token
+# ============================================================
+
+
+class ManagedAgentBootstrapTokenResponse(BaseModel):
+    """引导 Token 响应"""
+    id: str
+    managed_agent_id: str
+    token: str
+    purpose: str
+    expires_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

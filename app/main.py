@@ -11,19 +11,21 @@ from fastapi.staticfiles import StaticFiles
 from app.database import init_db
 from app.config import config
 from app.auth.dependencies import get_current_agent
+from app.routers.admin import (
+    auth_router as admin_auth,
+    agents_router as admin_agents,
+    config_router as admin_config,
+    dashboard_router as admin_dashboard,
+    logs_router as admin_logs,
+    reviews_router as admin_reviews,
+    scores_router as admin_scores,
+    tasks_router as admin_tasks,
+    prompts_router as admin_prompts,
+    managed_agents_router as admin_managed_agents,
+)
 from app.routers import (
-    admin,
-    admin_agents,
-    admin_config,
-    admin_dashboard,
-    admin_logs,
-    admin_reviews,
-    admin_scores,
-    admin_tasks,
     agents,
     feed,
-    logs,
-    prompts,
     review_records,
     rules,
     scores,
@@ -32,6 +34,7 @@ from app.routers import (
     tasks,
     tools,
     webui,
+    logs,
 )
 from app.middleware.request_logger import RequestLoggerMiddleware
 
@@ -61,6 +64,15 @@ def _cleanup_old_request_logs():
 async def lifespan(app: FastAPI):
     """应用生命周期：启动时初始化数据库"""
     init_db()
+
+    # 自动回填：把已有运行态 Agent 同步到配置态
+    from app.database import SessionLocal
+    from app.services.managed_agent_service import auto_backfill_from_runtime
+    _backfill_db = SessionLocal()
+    try:
+        auto_backfill_from_runtime(_backfill_db)
+    finally:
+        _backfill_db.close()
 
     # 清理过期请求日志
     _cleanup_old_request_logs()
@@ -137,15 +149,8 @@ async def get_notification_config(agent=Depends(get_current_agent)):
 
 # 注册路由（统一 /api 前缀）
 API_PREFIX = "/api"
+# --- Agent 侧 API ---
 app.include_router(agents.router, prefix=API_PREFIX)
-app.include_router(admin.router, prefix=API_PREFIX)
-app.include_router(admin_agents.router, prefix=API_PREFIX)
-app.include_router(admin_config.router, prefix=API_PREFIX)
-app.include_router(admin_dashboard.router, prefix=API_PREFIX)
-app.include_router(admin_logs.router, prefix=API_PREFIX)
-app.include_router(admin_reviews.router, prefix=API_PREFIX)
-app.include_router(admin_scores.router, prefix=API_PREFIX)
-app.include_router(admin_tasks.router, prefix=API_PREFIX)
 app.include_router(tasks.router, prefix=API_PREFIX)
 app.include_router(sub_tasks.router, prefix=API_PREFIX)
 app.include_router(rules.router, prefix=API_PREFIX)
@@ -153,9 +158,22 @@ app.include_router(review_records.router, prefix=API_PREFIX)
 app.include_router(scores.router, prefix=API_PREFIX)
 app.include_router(logs.router, prefix=API_PREFIX)
 app.include_router(feed.router, prefix=API_PREFIX)
-app.include_router(prompts.router, prefix=API_PREFIX)
 app.include_router(tools.router, prefix=API_PREFIX)
 app.include_router(setup.router, prefix=API_PREFIX)
+
+# --- 管理端 API ---
+app.include_router(admin_auth, prefix=API_PREFIX)
+app.include_router(admin_agents, prefix=API_PREFIX)
+app.include_router(admin_config, prefix=API_PREFIX)
+app.include_router(admin_dashboard, prefix=API_PREFIX)
+app.include_router(admin_logs, prefix=API_PREFIX)
+app.include_router(admin_reviews, prefix=API_PREFIX)
+app.include_router(admin_scores, prefix=API_PREFIX)
+app.include_router(admin_tasks, prefix=API_PREFIX)
+app.include_router(admin_prompts, prefix=API_PREFIX)
+app.include_router(admin_managed_agents, prefix=API_PREFIX)
+
+# --- WebUI ---
 app.include_router(webui.router, prefix=API_PREFIX)
 
 

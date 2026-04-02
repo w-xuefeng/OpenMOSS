@@ -48,6 +48,7 @@ def init_db():
         review_record,
         reward_log,
         patrol_record,
+        managed_agent,
     )
 
     Base.metadata.create_all(bind=engine)
