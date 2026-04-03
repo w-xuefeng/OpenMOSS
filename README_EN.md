@@ -580,7 +580,7 @@ setup:
 | `webui.public_feed`         | `false`             | No       | Make activity feed publicly accessible                   |
 | `webui.feed_retention_days` | `7`                 | No       | Request log retention days                               |
 | `webui.auto_update`         | `true`              | No       | Enable WebUI automatic update (will automatically pull if there is no frontend at startup)|
-| `webui.github_repo`         | `uluckyXH/OpenMOSS` | No       | GitHub repository (used for downloading WebUI releases; If you want to independently maintain a personalized webUI, you can configure your own fork repository|
+| `webui.github_repo`         | `uluckyXH/OpenMOSS` | No       | GitHub repository (used for downloading WebUI releases; If you want to independently maintain a personalized webUI, you can configure your own fork repository)|
 | `workspace.root`            | `./workspace`       | **Yes**  | Agent working directory root path                        |
 | `setup.initialized`         | `false`             | No       | Initialization flag, set by Setup Wizard automatically   |
 
