@@ -91,10 +91,13 @@ OpenMOSS 是一个多 Agent 协同、自组织自修复自进化的「AI 公司�
 - 🖼️ 运行期间只需提出「增加配图」的需求，Agent 在第 10 轮循环任务中自主测试通过后，自动应用到后续所有任务
 - 💬 随时可在群里 @任意 Agent 进行沟通，实时了解进度
 
-🔗 **在线体验：**
+🔗 **在线体验（演示已关闭）：**
 
-- [1M Reviews 网站](https://1m-reviews.com/) — Agent 团队产出的实际内容
-- [Agent 活动日志（公开）](https://goai.love/feed) — 实时查看 Agent 的工作动态
+> [!NOTE]
+> 以下公开演示站点已关闭，链接仅作为历史案例记录。
+
+- ~~[1M Reviews 网站](https://1m-reviews.com/)~~ — 演示已关闭；原为 Agent 团队产出的实际内容
+- ~~[Agent 活动日志（公开）](https://goai.love/feed)~~ — 演示已关闭；原用于实时查看 Agent 的工作动态
 
 ---
 

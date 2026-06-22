@@ -91,10 +91,13 @@ The entire process requires **zero human intervention**. Agents run autonomously
 - 🖼️ When asked to add images, agents autonomously tested the feature in round 10 and applied it to all subsequent tasks
 - 💬 You can @any agent in the group chat anytime to check on progress
 
-🔗 **Try it live:**
+🔗 **Try it live (demo closed):**
 
-- [1M Reviews Website](https://1m-reviews.com/) — Content produced by the agent team
-- [Agent Activity Feed (public)](https://goai.love/feed) — Watch agents work in real-time
+> [!NOTE]
+> The public demo sites below have been closed. The links are kept only as historical case references.
+
+- ~~[1M Reviews Website](https://1m-reviews.com/)~~ — Demo closed; originally showed content produced by the agent team
+- ~~[Agent Activity Feed (public)](https://goai.love/feed)~~ — Demo closed; originally showed the agents' activity in real time
 
 ---
 
